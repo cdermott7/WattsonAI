@@ -139,6 +139,61 @@ app.get('/api/machines', async (req, res) => {
   }
 });
 
+// API endpoint to update machine allocation via Mara Hackathon API
+app.put('/api/machines', async (req, res) => {
+  try {
+    const apiKey = req.headers['x-api-key'];
+    
+    if (!apiKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'X-Api-Key header is required',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const allocation = req.body;
+    console.log('Updating machine allocation via Mara Hackathon API...');
+    console.log('Using API Key:', apiKey);
+    console.log('Request body:', allocation);
+    
+    const response = await axios.put('https://mara-hackathon-api.onrender.com/machines', allocation, {
+      headers: {
+        'X-Api-Key': apiKey,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('Machine allocation API Response received:');
+    console.log('Status:', response.status);
+    console.log('Response data:', JSON.stringify(response.data, null, 2));
+    
+    res.json({
+      success: true,
+      data: response.data,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error updating machine allocation:', error.message);
+    if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+        return res.status(error.response.status).json({
+            success: false,
+            error: error.response.data,
+            timestamp: new Date().toISOString()
+        });
+    }
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Simple test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is running!' });
@@ -150,5 +205,6 @@ app.listen(PORT, () => {
   console.log(`Test endpoint: http://localhost:${PORT}/api/test`);
   console.log(`Prices endpoint: http://localhost:${PORT}/api/prices`);
   console.log(`Inventory endpoint: http://localhost:${PORT}/api/inventory`);
-  console.log(`Machines endpoint: http://localhost:${PORT}/api/machines`);
+  console.log(`Machines endpoint: GET http://localhost:${PORT}/api/machines`);
+  console.log(`Manage Machines endpoint: PUT http://localhost:${PORT}/api/machines`);
 }); 
