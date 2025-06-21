@@ -32,7 +32,7 @@ const Configuration = () => {
   const [showPasswords, setShowPasswords] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [debugResponse, setDebugResponse] = useState(null);
-  const { ...globalDataContext } = useData();
+  const { siteName, apiKey, power, updateSiteConfig, ...globalDataContext } = useData();
   const [expandedSections, setExpandedSections] = useState({
     api: true,
     wattson: false,
@@ -41,16 +41,13 @@ const Configuration = () => {
     debug: false
   });
 
-  // Configuration states
+  // Configuration states - using global state for site config, local state for other settings
   const [config, setConfig] = useState({
-    // MARA API Configuration
+    // MARA API Configuration - using global state values
     apiUrl: 'https://api.marathondh.com/v1',
-    apiKey: '947a8153-edf4-4093-aa92-e6efe0bd2682',
     refreshInterval: 30,
     timeout: 10000,
     retryAttempts: 3,
-    siteName: 'MaraHackathon',
-    sitePower: 1000000,
     
     // Wattson AI Configuration
     wattsonPersonality: 'sherlock',
@@ -100,10 +97,16 @@ const Configuration = () => {
   };
 
   const handleConfigChange = (category, field, value) => {
-    setConfig(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    // Handle site configuration updates through global state
+    if (field === 'siteName' || field === 'apiKey' || field === 'power') {
+      updateSiteConfig({ [field]: value });
+    } else {
+      // Handle other configuration updates through local state
+      setConfig(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
   };
 
   const handleSaveConfiguration = () => {
@@ -126,7 +129,7 @@ const Configuration = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: config.siteName
+          name: siteName
         })
       });
 
@@ -136,12 +139,11 @@ const Configuration = () => {
 
       const result = await response.json();
       
-      // Auto-populate the configuration with the returned values
-      setConfig(prev => ({
-        ...prev,
+      // Update global state with the returned values
+      updateSiteConfig({
         apiKey: result.data.api_key,
-        sitePower: result.data.power
-      }));
+        power: result.data.power
+      });
 
       // Show success notification
       console.log('Site created successfully:', result.data);
@@ -156,11 +158,11 @@ const Configuration = () => {
   const handleFetchMachines = async () => {
     setDebugResponse('Fetching...');
     try {
-      console.log('Fetching machines with API key:', config.apiKey);
+      console.log('Fetching machines with API key:', apiKey);
       
       const response = await fetch('http://localhost:3001/api/machines', {
         headers: {
-          'X-Api-Key': config.apiKey
+          'X-Api-Key': apiKey
         }
       });
 
@@ -210,6 +212,10 @@ const Configuration = () => {
         isUpdating: globalDataContext.isUpdating,
         error: globalDataContext.error,
         lastUpdated: globalDataContext.lastUpdated,
+        // Site configuration
+        siteName: siteName,
+        apiKey: apiKey,
+        power: power
     }
     setDebugResponse(JSON.stringify(dataOnlyContext, null, 2));
   };
@@ -269,7 +275,7 @@ const Configuration = () => {
           <div className="relative">
             <input
               type={showPasswords.apiKey ? 'text' : 'password'}
-              value={config.apiKey}
+              value={apiKey}
               onChange={(e) => handleConfigChange('api', 'apiKey', e.target.value)}
               className="w-full bg-white/10 text-white rounded-xl px-4 py-3 pr-12 border border-white/20 focus:outline-none focus:ring-2 focus:ring-orange-500/50 backdrop-blur-sm"
             />
@@ -286,7 +292,7 @@ const Configuration = () => {
           <label className="block text-white/80 text-sm font-medium mb-3">Site Name</label>
           <input
             type="text"
-            value={config.siteName}
+            value={siteName}
             onChange={(e) => handleConfigChange('api', 'siteName', e.target.value)}
             className="w-full bg-white/10 text-white rounded-xl px-4 py-3 border border-white/20 focus:outline-none focus:ring-2 focus:ring-orange-500/50 backdrop-blur-sm"
           />
@@ -323,11 +329,11 @@ const Configuration = () => {
             <span className="text-white font-medium">Fetch Machines</span>
           </motion.button>
           
-          {config.sitePower > 0 && (
+          {power > 0 && (
             <div className="flex items-center space-x-2 px-4 py-2 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
               <Zap className="w-4 h-4 text-emerald-400" />
               <span className="text-emerald-400 text-sm font-medium">
-                Power: {config.sitePower.toLocaleString()} W
+                Power: {power.toLocaleString()} W
               </span>
             </div>
           )}

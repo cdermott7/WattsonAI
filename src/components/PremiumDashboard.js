@@ -17,7 +17,8 @@ const PremiumDashboard = () => {
     isUpdating, 
     error, 
     lastUpdated,
-    updateMachinesData 
+    updateMachinesData,
+    apiKey
   } = useData();
   
   const [selectedMetric, setSelectedMetric] = useState('energy');
@@ -644,7 +645,7 @@ const PremiumDashboard = () => {
 
           {machines && (
             <MachineAllocation
-              apiKey="947a8153-edf4-4093-aa92-e6efe0bd2682"
+              apiKey={apiKey}
               initialAllocation={{
                 air_miners: machines.air_miners || 0,
                 hydro_miners: machines.hydro_miners || 0,

@@ -16,7 +16,11 @@ const initialState = {
   loading: true,
   isUpdating: false,
   error: null,
-  lastUpdated: null
+  lastUpdated: null,
+  // Site configuration
+  siteName: 'MaraHackathon',
+  apiKey: '947a8153-edf4-4093-aa92-e6efe0bd2682',
+  power: 1000000
 };
 
 // Action types
@@ -26,7 +30,8 @@ const ACTIONS = {
   SET_ERROR: 'SET_ERROR',
   SET_DATA: 'SET_DATA',
   UPDATE_MACHINES: 'UPDATE_MACHINES',
-  REFRESH_DATA: 'REFRESH_DATA'
+  REFRESH_DATA: 'REFRESH_DATA',
+  UPDATE_SITE_CONFIG: 'UPDATE_SITE_CONFIG'
 };
 
 // Reducer function
@@ -64,6 +69,12 @@ const dataReducer = (state, action) => {
         lastUpdated: new Date().toISOString()
       };
     
+    case ACTIONS.UPDATE_SITE_CONFIG:
+      return {
+        ...state,
+        ...action.payload
+      };
+    
     default:
       return state;
   }
@@ -84,7 +95,7 @@ export const DataProvider = ({ children }) => {
       const [prices, inventory, machines] = await Promise.all([
         fetchPrices(),
         fetchInventory(),
-        fetchMachines('947a8153-edf4-4093-aa92-e6efe0bd2682')
+        fetchMachines(state.apiKey)
       ]);
       
       const profitability = calculateProfitability(inventory, prices);
@@ -104,7 +115,7 @@ export const DataProvider = ({ children }) => {
     try {
       dispatch({ type: ACTIONS.SET_UPDATING, payload: true });
       
-      const updatedMachines = await updateMachines('947a8153-edf4-4093-aa92-e6efe0bd2682', allocation);
+      const updatedMachines = await updateMachines(state.apiKey, allocation);
       
       // Instead of reloading all data, just update the machines state
       dispatch({ 
@@ -142,6 +153,14 @@ export const DataProvider = ({ children }) => {
     await loadData();
   };
 
+  // Update site configuration function
+  const updateSiteConfig = (config) => {
+    dispatch({ 
+      type: ACTIONS.UPDATE_SITE_CONFIG, 
+      payload: config 
+    });
+  };
+
   // Auto-refresh data every 30 seconds
   useEffect(() => {
     loadData();
@@ -156,6 +175,7 @@ export const DataProvider = ({ children }) => {
     loadData,
     updateMachinesData,
     refreshData,
+    updateSiteConfig,
     dispatch
   };
 
