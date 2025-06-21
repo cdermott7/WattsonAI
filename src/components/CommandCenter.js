@@ -17,16 +17,33 @@ import {
   TrendingUp, 
   TrendingDown, 
   AlertTriangle,
+  BarChart3,
+  Battery,
+  Bell,
+  Brain,
   CheckCircle,
-  Settings,
-  Send,
+  Cpu,
+  Gauge,
   Mic,
   MicOff,
-  Bell,
+  Send,
+  Settings,
   Target,
-  BarChart3,
-  Gauge
+  TrendingDown,
+  TrendingUp,
+  Zap
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { fleetData, liveEvents, marketData, performanceMetrics } from '../services/enhancedMockData';
+
+import AnimatedNumber from './AnimatedNumber';
+import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
+import MarkdownRenderer from './MarkdownRenderer';
+import SuccessNotification from './SuccessNotification';
+import { browserNotificationService } from '../utils/browserNotifications';
+import { emailService } from '../utils/emailNotifications';
+import { useLiquidGlass } from './SimpleLiquidGlass';
 
 const CommandCenter = () => {
   const [messages, setMessages] = useState([
@@ -183,36 +200,31 @@ const CommandCenter = () => {
           energyPrice: prev.energyPrice + (Math.random() - 0.5) * 0.005,
           hashPrice: prev.hashPrice + (Math.random() - 0.5) * 0.3,
           profitPerWatt: prev.profitPerWatt + (Math.random() - 0.5) * 0.002,
-          efficiency: Math.max(90, Math.min(99, prev.efficiency + (Math.random() - 0.5) * 0.5)),
+          efficiency: Math.max(88, Math.min(99, prev.efficiency + (Math.random() - 0.5) * 1.5)),
           powerUtilization: Math.max(40, Math.min(50, prev.powerUtilization + (Math.random() - 0.5) * 1)),
           carbonEfficiency: Math.max(3, Math.min(6, prev.carbonEfficiency + (Math.random() - 0.5) * 0.2))
         };
 
-        // Trigger browser notifications for significant changes
-        const energyChange = Math.abs((newMetrics.energyPrice - prev.energyPrice) / prev.energyPrice) * 100;
-        if (energyChange > 2) { // 2% change
-          browserNotificationService.showEnergyOpportunity({
-            description: energyChange > 0 
-              ? `Energy prices increased ${energyChange.toFixed(1)}%` 
-              : `Energy prices decreased ${energyChange.toFixed(1)}%`,
-            potential: energyChange > 0 
-              ? 'Consider scaling down operations' 
-              : '$3,200/hour arbitrage opportunity'
-          });
+        // Determine system status
+        let status;
+        if (newMetrics.efficiency >= 95) {
+          status = 'healthy';
+        } else if (newMetrics.efficiency >= 90) {
+          status = 'warning';
+        } else {
+          status = 'critical';
         }
 
-        // Efficiency alerts
-        if (newMetrics.efficiency < 92 && prev.efficiency >= 92) {
-          browserNotificationService.showCriticalAlert({
-            title: 'Efficiency Drop Detected',
-            message: `System efficiency dropped to ${newMetrics.efficiency.toFixed(1)}%`,
-            confidence: 94
-          });
-        }
+        // Show dynamic system status notification
+        browserNotificationService.showSystemStatus({
+          status: status,
+          message: `Wattson AI here, everything is running smoothly! Hashrate: ${newMetrics.totalHashrate.toFixed(0)} TH/s | Profit/Watt: $${newMetrics.profitPerWatt.toFixed(4)}`,
+          efficiency: newMetrics.efficiency
+        });
 
         return newMetrics;
       });
-    }, 15000); // Check every 15 seconds
+    }, 10000); // Check every 10 seconds
 
     return () => {
       clearInterval(interval);
