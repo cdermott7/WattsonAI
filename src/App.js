@@ -30,12 +30,10 @@ const Navigation = () => {
       <div className="max-w-7xl mx-auto px-8">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center space-x-4">
-            <div className="p-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 shadow-lg">
-              <Brain className="w-8 h-8 text-white" />
-            </div>
+            <img src="/logo.png" alt="Wattson AI Logo" className="h-10 w-10" />
             <div>
-              <span className="text-2xl font-extralight text-white tracking-tight">Wattson</span>
-              <div className="text-xs text-white/60 font-light">Enterprise Operations AI</div>
+              <h1 className="text-xl font-bold text-white">Wattson</h1>
+              <p className="text-xs text-white/70">Enterprise Operations AI</p>
             </div>
           </div>
           

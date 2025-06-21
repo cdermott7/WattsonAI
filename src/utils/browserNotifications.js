@@ -10,10 +10,10 @@ export class BrowserNotificationService {
     
     // Initialize notification icons
     this.icons = {
-      critical: '/favicon.ico', // Replace with actual icon path
-      warning: '/favicon.ico',
-      success: '/favicon.ico',
-      info: '/favicon.ico'
+      critical: '/logo.png', // Replace with actual icon path
+      warning: '/logo.png',
+      success: '/logo.png',
+      info: '/logo.png'
     };
   }
 
