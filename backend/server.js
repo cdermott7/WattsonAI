@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -191,6 +192,44 @@ app.put('/api/machines', async (req, res) => {
       error: error.message,
       timestamp: new Date().toISOString()
     });
+  }
+});
+
+// Chat endpoint integrating with Claude AI
+app.post('/api/chat', async (req, res) => {
+  try {
+    const messages = req.body.messages;
+    let prompt = '';
+    messages.forEach(msg => {
+      prompt += `\n\n${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}`;
+    });
+    prompt += '\n\nAssistant:';
+
+    const response = await axios.post('https://api.anthropic.com/v1/complete', {
+      model: 'claude-2',
+      prompt,
+      max_tokens_to_sample: 300,
+      temperature: 0.7,
+    }, {
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'Anthropic-Version': '2023-06-01',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const completion = response.data.completion;
+    res.json({ success: true, completion });
+  } catch (error) {
+    console.error('Error in chat endpoint:', error);
+    if (error.response) {
+      console.error('Downstream error data:', error.response.data);
+      return res.status(error.response.status).json({
+        success: false,
+        error: error.response.data
+      });
+    }
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

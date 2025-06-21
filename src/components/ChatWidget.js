@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchPrices, fetchInventory, calculateProfitability } from '../services/api';
-import { WattsonAI } from '../utils/wattsonAI';
 import { MessageSquare, Send, Mic, MicOff, Bot, User } from 'lucide-react';
 
 const ChatWidget = () => {
@@ -24,7 +23,6 @@ const ChatWidget = () => {
   
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
-  const wattson = new WattsonAI();
 
   useEffect(() => {
     const loadData = async () => {
@@ -96,20 +94,39 @@ const ChatWidget = () => {
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
-    
-    // Simulate AI processing delay
-    setTimeout(() => {
-      const aiResponse = wattson.processQuery(inputText, data);
+
+    // Prepare messages for Claude API
+    const messagesForAPI = [...messages, userMessage].map(m => ({
+      role: m.type === 'user' ? 'user' : 'assistant',
+      content: m.content
+    }));
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: messagesForAPI })
+      });
+      const result = await response.json();
+      const aiContent = result.success ? result.completion : `Error: ${result.error}`;
       const aiMessage = {
         id: Date.now() + 1,
         type: 'ai',
-        content: aiResponse,
+        content: aiContent,
         timestamp: new Date()
       };
-      
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error fetching AI response:', error);
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        type: 'ai',
+        content: 'Sorry, there was an error processing your request.',
+        timestamp: new Date()
+      }]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
 
     setInputText('');
   };

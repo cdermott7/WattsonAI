@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchPrices, fetchInventory, calculateProfitability } from '../services/api';
-import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
 import { useLiquidGlass } from './SimpleLiquidGlass';
 import MarkdownRenderer from './MarkdownRenderer';
 import { Send, Mic, MicOff, Brain, User, Minimize2, Maximize2 } from 'lucide-react';
@@ -24,7 +23,6 @@ const PremiumChatWidget = () => {
   
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
-  const wattson = new EnhancedWattsonAI();
 
   // Liquid glass for chat container
   const chatContainerRef = useLiquidGlass({ width: 420, height: 600 });
@@ -93,20 +91,41 @@ const PremiumChatWidget = () => {
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
-    
-    setTimeout(() => {
-      const aiResponse = wattson.processAdvancedQuery(inputText, data);
+
+    // Exclude initial AI greeting from API conversation history
+    const messagesForAPI = [...messages.slice(1), userMessage].map(m => ({
+      role: m.type === 'user' ? 'user' : 'assistant',
+      content: m.content
+    }));
+
+    try {
+      const response = await fetch('http://localhost:3001/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: messagesForAPI })
+      });
+      const result = await response.json();
+      const aiContent = result.success ? result.completion : `Error: ${result.error}`;
+
       const aiMessage = {
         id: Date.now() + 1,
         type: 'ai',
-        content: aiResponse,
-        timestamp: new Date(),
-        confidence: Math.floor(Math.random() * 20) + 80
+        content: aiContent,
+        timestamp: new Date()
       };
-      
+
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error fetching AI response:', error);
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        type: 'ai',
+        content: 'Sorry, there was an error processing your request.',
+        timestamp: new Date()
+      }]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
 
     setInputText('');
   };
