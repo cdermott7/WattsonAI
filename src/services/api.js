@@ -43,6 +43,32 @@ export const fetchPrices = async () => {
   }
 };
 
+export const fetchMachines = async (apiKey) => {
+  if (!apiKey) {
+    console.error('API key is required to fetch machines data');
+    return null;
+  }
+  
+  try {
+    const response = await fetch('http://localhost:3001/api/machines', {
+      headers: {
+        'X-Api-Key': apiKey
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('Machines response from local backend:', result);
+    return result.data; // Extract data from our backend response
+  } catch (error) {
+    console.error('Error fetching machines from local backend:', error);
+    return null;
+  }
+};
+
 export const createSite = async (siteName) => {
   try {
     const response = await api.post('/sites', {

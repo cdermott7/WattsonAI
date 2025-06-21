@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { fetchPrices, fetchInventory, calculateProfitability } from '../services/api';
+import { Activity, Brain, Cpu, DollarSign, Server, TrendingDown, TrendingUp, Zap } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import React, { useEffect, useState } from 'react';
+import { calculateProfitability, fetchInventory, fetchMachines, fetchPrices } from '../services/api';
+
 import { useLiquidGlass } from './SimpleLiquidGlass';
-import { TrendingUp, TrendingDown, Zap, Cpu, Brain, Activity, DollarSign } from 'lucide-react';
 
 const PremiumDashboard = () => {
-  const [data, setData] = useState({ prices: [], inventory: null, profitability: null });
+  const [data, setData] = useState({ prices: [], inventory: null, profitability: null, machines: null });
   const [loading, setLoading] = useState(true);
   const [selectedMetric, setSelectedMetric] = useState('energy');
 
@@ -18,13 +19,14 @@ const PremiumDashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [prices, inventory] = await Promise.all([
+        const [prices, inventory, machines] = await Promise.all([
           fetchPrices(),
-          fetchInventory()
+          fetchInventory(),
+          fetchMachines('947a8153-edf4-4093-aa92-e6efe0bd2682') // Using the API key from Configuration
         ]);
         
         const profitability = calculateProfitability(inventory, prices);
-        setData({ prices, inventory, profitability });
+        setData({ prices, inventory, profitability, machines });
         setLoading(false);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -456,6 +458,192 @@ const PremiumDashboard = () => {
             )}
           </div>
         </div>
+
+        {/* MARA Machines Data */}
+        {data.machines && (
+          <div className="mt-8 bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+            <div className="flex items-center space-x-3 mb-6">
+              <Server className="w-6 h-6 text-purple-500" />
+              <h3 className="text-xl font-light text-white">MARA Machines</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Air Miners */}
+              {data.machines.air_miners > 0 && (
+                <div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="text-white font-medium">Air Miners</h4>
+                        <p className="text-white/60 text-sm">
+                          {data.machines.air_miners} units • {data.machines.power?.air_miners || 0}W
+                        </p>
+                      </div>
+                      <div className="w-3 h-3 rounded-full bg-green-400" />
+                    </div>
+                    
+                    <div className="space-y-2 text-xs text-white/50">
+                      <div className="flex justify-between">
+                        <span>Power:</span>
+                        <span className="text-white">{(data.machines.power?.air_miners || 0).toLocaleString()}W</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Revenue:</span>
+                        <span className="text-white">${(data.machines.revenue?.air_miners || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Hydro Miners */}
+              {data.machines.hydro_miners > 0 && (
+                <div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="text-white font-medium">Hydro Miners</h4>
+                        <p className="text-white/60 text-sm">
+                          {data.machines.hydro_miners} units • {data.machines.power?.hydro_miners || 0}W
+                        </p>
+                      </div>
+                      <div className="w-3 h-3 rounded-full bg-green-400" />
+                    </div>
+                    
+                    <div className="space-y-2 text-xs text-white/50">
+                      <div className="flex justify-between">
+                        <span>Power:</span>
+                        <span className="text-white">{(data.machines.power?.hydro_miners || 0).toLocaleString()}W</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Revenue:</span>
+                        <span className="text-white">${(data.machines.revenue?.hydro_miners || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Immersion Miners */}
+              {data.machines.immersion_miners > 0 && (
+                <div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="text-white font-medium">Immersion Miners</h4>
+                        <p className="text-white/60 text-sm">
+                          {data.machines.immersion_miners} units • {data.machines.power?.immersion_miners || 0}W
+                        </p>
+                      </div>
+                      <div className="w-3 h-3 rounded-full bg-green-400" />
+                    </div>
+                    
+                    <div className="space-y-2 text-xs text-white/50">
+                      <div className="flex justify-between">
+                        <span>Power:</span>
+                        <span className="text-white">{(data.machines.power?.immersion_miners || 0).toLocaleString()}W</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Revenue:</span>
+                        <span className="text-white">${(data.machines.revenue?.immersion_miners || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* GPU Compute */}
+              {data.machines.gpu_compute > 0 && (
+                <div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="text-white font-medium">GPU Compute</h4>
+                        <p className="text-white/60 text-sm">
+                          {data.machines.gpu_compute} units • {data.machines.power?.gpu_compute || 0}W
+                        </p>
+                      </div>
+                      <div className="w-3 h-3 rounded-full bg-green-400" />
+                    </div>
+                    
+                    <div className="space-y-2 text-xs text-white/50">
+                      <div className="flex justify-between">
+                        <span>Power:</span>
+                        <span className="text-white">{(data.machines.power?.gpu_compute || 0).toLocaleString()}W</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Revenue:</span>
+                        <span className="text-white">${(data.machines.revenue?.gpu_compute || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ASIC Compute */}
+              {data.machines.asic_compute > 0 && (
+                <div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="text-white font-medium">ASIC Compute</h4>
+                        <p className="text-white/60 text-sm">
+                          {data.machines.asic_compute} units • {data.machines.power?.asic_compute || 0}W
+                        </p>
+                      </div>
+                      <div className="w-3 h-3 rounded-full bg-green-400" />
+                    </div>
+                    
+                    <div className="space-y-2 text-xs text-white/50">
+                      <div className="flex justify-between">
+                        <span>Power:</span>
+                        <span className="text-white">{(data.machines.power?.asic_compute || 0).toLocaleString()}W</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Revenue:</span>
+                        <span className="text-white">${(data.machines.revenue?.asic_compute || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Summary Stats */}
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-white/5 rounded-xl border border-white/10">
+              <div className="text-center">
+                <div className="text-2xl font-light text-white mb-1">
+                  {(data.machines.total_power_used || 0).toLocaleString()}
+                </div>
+                <div className="text-white/60 text-sm">Total Power (W)</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-light text-white mb-1">
+                  ${(data.machines.total_revenue || 0).toFixed(2)}
+                </div>
+                <div className="text-white/60 text-sm">Total Revenue</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-light text-white mb-1">
+                  ${(data.machines.total_power_cost || 0).toFixed(2)}
+                </div>
+                <div className="text-white/60 text-sm">Power Cost</div>
+              </div>
+            </div>
+            
+            {!data.machines.air_miners && !data.machines.hydro_miners && !data.machines.immersion_miners && !data.machines.gpu_compute && !data.machines.asic_compute && (
+              <div className="text-center py-8">
+                <Server className="w-12 h-12 text-white/40 mx-auto mb-4" />
+                <p className="text-white/60">No machines data available</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
