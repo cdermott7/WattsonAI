@@ -1,5 +1,6 @@
+import { fetchMockInventory, fetchMockPrices } from './mockData';
+
 import axios from 'axios';
-import { fetchMockPrices, fetchMockInventory } from './mockData';
 
 const BASE_URL = 'https://mara-hackathon-api.onrender.com';
 const USE_MOCK_DATA = true; // Set to false when API is available
