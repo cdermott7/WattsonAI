@@ -69,6 +69,37 @@ export const fetchMachines = async (apiKey) => {
   }
 };
 
+export const updateMachines = async (apiKey, allocation) => {
+  if (!apiKey) {
+    console.error('API key is required to update machines');
+    return null;
+  }
+  
+  try {
+    const response = await fetch('http://localhost:3001/api/machines', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': apiKey
+      },
+      body: JSON.stringify(allocation)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error updating machines:', errorData);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('Machines updated successfully:', result);
+    return result.data;
+  } catch (error) {
+    console.error('Error updating machines from local backend:', error);
+    throw error;
+  }
+};
+
 export const createSite = async (siteName) => {
   try {
     const response = await api.post('/sites', {

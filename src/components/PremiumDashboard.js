@@ -2,42 +2,84 @@ import { Activity, Brain, Cpu, DollarSign, Server, TrendingDown, TrendingUp, Zap
 import { AnimatePresence, motion } from 'framer-motion';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import React, { useEffect, useState } from 'react';
-import { calculateProfitability, fetchInventory, fetchMachines, fetchPrices } from '../services/api';
+import {
+  calculateProfitability,
+  fetchInventory,
+  fetchMachines,
+  fetchPrices,
+  updateMachines
+} from '../services/api';
 
 import { useLiquidGlass } from './SimpleLiquidGlass';
 
 const PremiumDashboard = () => {
   const [data, setData] = useState({ prices: [], inventory: null, profitability: null, machines: null });
   const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState('energy');
+  const [allocation, setAllocation] = useState({
+    air_miners: 0,
+    hydro_miners: 0,
+    immersion_miners: 0,
+    gpu_compute: 0,
+    asic_compute: 0,
+  });
 
   // Liquid glass refs for major components
   const chartContainerRef = useLiquidGlass({ width: 800, height: 400 });
   const metricsGridRef = useLiquidGlass({ width: 600, height: 300 });
   const assetsContainerRef = useLiquidGlass({ width: 500, height: 350 });
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [prices, inventory, machines] = await Promise.all([
-          fetchPrices(),
-          fetchInventory(),
-          fetchMachines('947a8153-edf4-4093-aa92-e6efe0bd2682') // Using the API key from Configuration
-        ]);
-        
-        const profitability = calculateProfitability(inventory, prices);
-        setData({ prices, inventory, profitability, machines });
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setLoading(false);
+  const loadData = async () => {
+    try {
+      const [prices, inventory, machines] = await Promise.all([
+        fetchPrices(),
+        fetchInventory(),
+        fetchMachines('947a8153-edf4-4093-aa92-e6efe0bd2682') // Using the API key from Configuration
+      ]);
+      
+      const profitability = calculateProfitability(inventory, prices);
+      setData({ prices, inventory, profitability, machines });
+      if (machines) {
+        setAllocation({
+          air_miners: machines.air_miners || 0,
+          hydro_miners: machines.hydro_miners || 0,
+          immersion_miners: machines.immersion_miners || 0,
+          gpu_compute: machines.gpu_compute || 0,
+          asic_compute: machines.asic_compute || 0,
+        });
       }
-    };
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleAllocationChange = (e) => {
+    const { name, value } = e.target;
+    setAllocation(prev => ({ ...prev, [name]: parseInt(value, 10) || 0 }));
+  };
+
+  const handleUpdateAllocation = async () => {
+    setIsUpdating(true);
+    try {
+      await updateMachines('947a8153-edf4-4093-aa92-e6efe0bd2682', allocation);
+      // Data will refresh on the next interval, or we can force it
+      await loadData();
+    } catch (error) {
+      console.error('Failed to update machine allocation', error);
+      // You could add a user-facing error message here
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const formatChartData = (prices) => {
     return prices.slice().reverse().map((price, index) => ({
@@ -410,6 +452,46 @@ const PremiumDashboard = () => {
                 })}
               </div>
             )}
+
+            <div className="mt-8 space-y-4">
+              {Object.keys(allocation).map(key => (
+                <div key={key} className="flex items-center justify-between">
+                  <label htmlFor={key} className="text-white/80 capitalize">
+                    {key.replace('_', ' ')}
+                  </label>
+                  <input
+                    type="number"
+                    id={key}
+                    name={key}
+                    value={allocation[key]}
+                    onChange={handleAllocationChange}
+                    className="w-24 bg-white/10 text-white rounded-md px-2 py-1 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6">
+              <motion.button
+                onClick={handleUpdateAllocation}
+                disabled={isUpdating}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all backdrop-blur-sm shadow-lg"
+              >
+                {isUpdating ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span className="text-white font-medium">Updating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Server className="w-4 h-4 text-white" />
+                    <span className="text-white font-medium">Update Allocation</span>
+                  </>
+                )}
+              </motion.button>
+            </div>
           </div>
 
           {/* Inference Assets */}
