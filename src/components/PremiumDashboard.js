@@ -10,6 +10,7 @@ import {
   updateMachines
 } from '../services/api';
 
+import MachineAllocation from './MachineAllocation';
 import { useLiquidGlass } from './SimpleLiquidGlass';
 
 const PremiumDashboard = () => {
@@ -17,13 +18,6 @@ const PremiumDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState('energy');
-  const [allocation, setAllocation] = useState({
-    air_miners: 0,
-    hydro_miners: 0,
-    immersion_miners: 0,
-    gpu_compute: 0,
-    asic_compute: 0,
-  });
 
   // Liquid glass refs for major components
   const chartContainerRef = useLiquidGlass({ width: 800, height: 400 });
@@ -40,15 +34,6 @@ const PremiumDashboard = () => {
       
       const profitability = calculateProfitability(inventory, prices);
       setData({ prices, inventory, profitability, machines });
-      if (machines) {
-        setAllocation({
-          air_miners: machines.air_miners || 0,
-          hydro_miners: machines.hydro_miners || 0,
-          immersion_miners: machines.immersion_miners || 0,
-          gpu_compute: machines.gpu_compute || 0,
-          asic_compute: machines.asic_compute || 0,
-        });
-      }
       setLoading(false);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -62,25 +47,6 @@ const PremiumDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleAllocationChange = (e) => {
-    const { name, value } = e.target;
-    setAllocation(prev => ({ ...prev, [name]: parseInt(value, 10) || 0 }));
-  };
-
-  const handleUpdateAllocation = async () => {
-    setIsUpdating(true);
-    try {
-      await updateMachines('947a8153-edf4-4093-aa92-e6efe0bd2682', allocation);
-      // Data will refresh on the next interval, or we can force it
-      await loadData();
-    } catch (error) {
-      console.error('Failed to update machine allocation', error);
-      // You could add a user-facing error message here
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const formatChartData = (prices) => {
     return prices.slice().reverse().map((price, index) => ({
       time: new Date(price.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -91,7 +57,6 @@ const PremiumDashboard = () => {
       timestamp: price.timestamp
     }));
   };
-
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -452,46 +417,6 @@ const PremiumDashboard = () => {
                 })}
               </div>
             )}
-
-            <div className="mt-8 space-y-4">
-              {Object.keys(allocation).map(key => (
-                <div key={key} className="flex items-center justify-between">
-                  <label htmlFor={key} className="text-white/80 capitalize">
-                    {key.replace('_', ' ')}
-                  </label>
-                  <input
-                    type="number"
-                    id={key}
-                    name={key}
-                    value={allocation[key]}
-                    onChange={handleAllocationChange}
-                    className="w-24 bg-white/10 text-white rounded-md px-2 py-1 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6">
-              <motion.button
-                onClick={handleUpdateAllocation}
-                disabled={isUpdating}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all backdrop-blur-sm shadow-lg"
-              >
-                {isUpdating ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span className="text-white font-medium">Updating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Server className="w-4 h-4 text-white" />
-                    <span className="text-white font-medium">Update Allocation</span>
-                  </>
-                )}
-              </motion.button>
-            </div>
           </div>
 
           {/* Inference Assets */}
@@ -539,193 +464,207 @@ const PremiumDashboard = () => {
               </div>
             )}
           </div>
+
+          {/* MARA Machines Data */}
+          {data.machines && (
+            <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+              <div className="flex items-center space-x-3 mb-6">
+                <Server className="w-6 h-6 text-purple-500" />
+                <h3 className="text-xl font-light text-white">MARA Machines</h3>
+              </div>
+            
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Air Miners */}
+                {data.machines.air_miners > 0 && (
+                  <div className="group relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-white font-medium">Air Miners</h4>
+                          <p className="text-white/60 text-sm">
+                            {data.machines.air_miners} units • {data.machines.power?.air_miners || 0}W
+                          </p>
+                        </div>
+                        <div className="w-3 h-3 rounded-full bg-green-400" />
+                      </div>
+                      
+                      <div className="space-y-2 text-xs text-white/50">
+                        <div className="flex justify-between">
+                          <span>Power:</span>
+                          <span className="text-white">{(data.machines.power?.air_miners || 0).toLocaleString()}W</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Revenue:</span>
+                          <span className="text-white">${(data.machines.revenue?.air_miners || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Hydro Miners */}
+                {data.machines.hydro_miners > 0 && (
+                  <div className="group relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-white font-medium">Hydro Miners</h4>
+                          <p className="text-white/60 text-sm">
+                            {data.machines.hydro_miners} units • {data.machines.power?.hydro_miners || 0}W
+                          </p>
+                        </div>
+                        <div className="w-3 h-3 rounded-full bg-green-400" />
+                      </div>
+                      
+                      <div className="space-y-2 text-xs text-white/50">
+                        <div className="flex justify-between">
+                          <span>Power:</span>
+                          <span className="text-white">{(data.machines.power?.hydro_miners || 0).toLocaleString()}W</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Revenue:</span>
+                          <span className="text-white">${(data.machines.revenue?.hydro_miners || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Immersion Miners */}
+                {data.machines.immersion_miners > 0 && (
+                  <div className="group relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-white font-medium">Immersion Miners</h4>
+                          <p className="text-white/60 text-sm">
+                            {data.machines.immersion_miners} units • {data.machines.power?.immersion_miners || 0}W
+                          </p>
+                        </div>
+                        <div className="w-3 h-3 rounded-full bg-green-400" />
+                      </div>
+                      
+                      <div className="space-y-2 text-xs text-white/50">
+                        <div className="flex justify-between">
+                          <span>Power:</span>
+                          <span className="text-white">{(data.machines.power?.immersion_miners || 0).toLocaleString()}W</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Revenue:</span>
+                          <span className="text-white">${(data.machines.revenue?.immersion_miners || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* GPU Compute */}
+                {data.machines.gpu_compute > 0 && (
+                  <div className="group relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-white font-medium">GPU Compute</h4>
+                          <p className="text-white/60 text-sm">
+                            {data.machines.gpu_compute} units • {data.machines.power?.gpu_compute || 0}W
+                          </p>
+                        </div>
+                        <div className="w-3 h-3 rounded-full bg-green-400" />
+                      </div>
+                      
+                      <div className="space-y-2 text-xs text-white/50">
+                        <div className="flex justify-between">
+                          <span>Power:</span>
+                          <span className="text-white">{(data.machines.power?.gpu_compute || 0).toLocaleString()}W</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Revenue:</span>
+                          <span className="text-white">${(data.machines.revenue?.gpu_compute || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ASIC Compute */}
+                {data.machines.asic_compute > 0 && (
+                  <div className="group relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-white font-medium">ASIC Compute</h4>
+                          <p className="text-white/60 text-sm">
+                            {data.machines.asic_compute} units • {data.machines.power?.asic_compute || 0}W
+                          </p>
+                        </div>
+                        <div className="w-3 h-3 rounded-full bg-green-400" />
+                      </div>
+                      
+                      <div className="space-y-2 text-xs text-white/50">
+                        <div className="flex justify-between">
+                          <span>Power:</span>
+                          <span className="text-white">{(data.machines.power?.asic_compute || 0).toLocaleString()}W</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Revenue:</span>
+                          <span className="text-white">${(data.machines.revenue?.asic_compute || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Summary Stats */}
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-white/5 rounded-xl border border-white/10">
+                <div className="text-center">
+                  <div className="text-2xl font-light text-white mb-1">
+                    {(data.machines.total_power_used || 0).toLocaleString()}
+                  </div>
+                  <div className="text-white/60 text-sm">Total Power (W)</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-light text-white mb-1">
+                    ${(data.machines.total_revenue || 0).toFixed(2)}
+                  </div>
+                  <div className="text-white/60 text-sm">Total Revenue</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-light text-white mb-1">
+                    ${(data.machines.total_power_cost || 0).toFixed(2)}
+                  </div>
+                  <div className="text-white/60 text-sm">Power Cost</div>
+                </div>
+              </div>
+              
+              {!data.machines.air_miners && !data.machines.hydro_miners && !data.machines.immersion_miners && !data.machines.gpu_compute && !data.machines.asic_compute && (
+                <div className="text-center py-8">
+                  <Server className="w-12 h-12 text-white/40 mx-auto mb-4" />
+                  <p className="text-white/60">No machines data available</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {data.machines && (
+            <MachineAllocation
+              apiKey="947a8153-edf4-4093-aa92-e6efe0bd2682"
+              initialAllocation={{
+                air_miners: data.machines.air_miners || 0,
+                hydro_miners: data.machines.hydro_miners || 0,
+                immersion_miners: data.machines.immersion_miners || 0,
+                gpu_compute: data.machines.gpu_compute || 0,
+                asic_compute: data.machines.asic_compute || 0,
+              }}
+              onAllocationChange={loadData}
+            />
+          )}
         </div>
-
-        {/* MARA Machines Data */}
-        {data.machines && (
-          <div className="mt-8 bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
-            <div className="flex items-center space-x-3 mb-6">
-              <Server className="w-6 h-6 text-purple-500" />
-              <h3 className="text-xl font-light text-white">MARA Machines</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Air Miners */}
-              {data.machines.air_miners > 0 && (
-                <div className="group relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="text-white font-medium">Air Miners</h4>
-                        <p className="text-white/60 text-sm">
-                          {data.machines.air_miners} units • {data.machines.power?.air_miners || 0}W
-                        </p>
-                      </div>
-                      <div className="w-3 h-3 rounded-full bg-green-400" />
-                    </div>
-                    
-                    <div className="space-y-2 text-xs text-white/50">
-                      <div className="flex justify-between">
-                        <span>Power:</span>
-                        <span className="text-white">{(data.machines.power?.air_miners || 0).toLocaleString()}W</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Revenue:</span>
-                        <span className="text-white">${(data.machines.revenue?.air_miners || 0).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Hydro Miners */}
-              {data.machines.hydro_miners > 0 && (
-                <div className="group relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="text-white font-medium">Hydro Miners</h4>
-                        <p className="text-white/60 text-sm">
-                          {data.machines.hydro_miners} units • {data.machines.power?.hydro_miners || 0}W
-                        </p>
-                      </div>
-                      <div className="w-3 h-3 rounded-full bg-green-400" />
-                    </div>
-                    
-                    <div className="space-y-2 text-xs text-white/50">
-                      <div className="flex justify-between">
-                        <span>Power:</span>
-                        <span className="text-white">{(data.machines.power?.hydro_miners || 0).toLocaleString()}W</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Revenue:</span>
-                        <span className="text-white">${(data.machines.revenue?.hydro_miners || 0).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Immersion Miners */}
-              {data.machines.immersion_miners > 0 && (
-                <div className="group relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="text-white font-medium">Immersion Miners</h4>
-                        <p className="text-white/60 text-sm">
-                          {data.machines.immersion_miners} units • {data.machines.power?.immersion_miners || 0}W
-                        </p>
-                      </div>
-                      <div className="w-3 h-3 rounded-full bg-green-400" />
-                    </div>
-                    
-                    <div className="space-y-2 text-xs text-white/50">
-                      <div className="flex justify-between">
-                        <span>Power:</span>
-                        <span className="text-white">{(data.machines.power?.immersion_miners || 0).toLocaleString()}W</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Revenue:</span>
-                        <span className="text-white">${(data.machines.revenue?.immersion_miners || 0).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* GPU Compute */}
-              {data.machines.gpu_compute > 0 && (
-                <div className="group relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="text-white font-medium">GPU Compute</h4>
-                        <p className="text-white/60 text-sm">
-                          {data.machines.gpu_compute} units • {data.machines.power?.gpu_compute || 0}W
-                        </p>
-                      </div>
-                      <div className="w-3 h-3 rounded-full bg-green-400" />
-                    </div>
-                    
-                    <div className="space-y-2 text-xs text-white/50">
-                      <div className="flex justify-between">
-                        <span>Power:</span>
-                        <span className="text-white">{(data.machines.power?.gpu_compute || 0).toLocaleString()}W</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Revenue:</span>
-                        <span className="text-white">${(data.machines.revenue?.gpu_compute || 0).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ASIC Compute */}
-              {data.machines.asic_compute > 0 && (
-                <div className="group relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="text-white font-medium">ASIC Compute</h4>
-                        <p className="text-white/60 text-sm">
-                          {data.machines.asic_compute} units • {data.machines.power?.asic_compute || 0}W
-                        </p>
-                      </div>
-                      <div className="w-3 h-3 rounded-full bg-green-400" />
-                    </div>
-                    
-                    <div className="space-y-2 text-xs text-white/50">
-                      <div className="flex justify-between">
-                        <span>Power:</span>
-                        <span className="text-white">{(data.machines.power?.asic_compute || 0).toLocaleString()}W</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Revenue:</span>
-                        <span className="text-white">${(data.machines.revenue?.asic_compute || 0).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Summary Stats */}
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-white/5 rounded-xl border border-white/10">
-              <div className="text-center">
-                <div className="text-2xl font-light text-white mb-1">
-                  {(data.machines.total_power_used || 0).toLocaleString()}
-                </div>
-                <div className="text-white/60 text-sm">Total Power (W)</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-light text-white mb-1">
-                  ${(data.machines.total_revenue || 0).toFixed(2)}
-                </div>
-                <div className="text-white/60 text-sm">Total Revenue</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-light text-white mb-1">
-                  ${(data.machines.total_power_cost || 0).toFixed(2)}
-                </div>
-                <div className="text-white/60 text-sm">Power Cost</div>
-              </div>
-            </div>
-            
-            {!data.machines.air_miners && !data.machines.hydro_miners && !data.machines.immersion_miners && !data.machines.gpu_compute && !data.machines.asic_compute && (
-              <div className="text-center py-8">
-                <Server className="w-12 h-12 text-white/40 mx-auto mb-4" />
-                <p className="text-white/60">No machines data available</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
