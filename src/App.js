@@ -1,14 +1,18 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import PremiumHomepage from './components/PremiumHomepage';
-import PremiumDashboard from './components/PremiumDashboard';
-import PremiumExecutionPage from './components/PremiumExecutionPage';
+import './App.css';
+
+import { Activity, BarChart3, Brain, Command, Home, Play, Settings } from 'lucide-react';
+import { NavLink, Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom';
+
+import ApiTest from './components/ApiTest';
 import CommandCenter from './components/CommandCenter';
 import Configuration from './components/Configuration';
+import { DataProvider } from './context/DataContext';
+import DataStatusIndicator from './components/DataStatusIndicator';
 import PremiumChatWidget from './components/PremiumChatWidget';
-import ApiTest from './components/ApiTest';
-import { Home, BarChart3, Play, Brain, Activity, Command, Settings } from 'lucide-react';
-import './App.css';
+import PremiumDashboard from './components/PremiumDashboard';
+import PremiumExecutionPage from './components/PremiumExecutionPage';
+import PremiumHomepage from './components/PremiumHomepage';
+import React from 'react';
 
 const Navigation = () => {
   const location = useLocation();
@@ -35,7 +39,7 @@ const Navigation = () => {
             </div>
           </div>
           
-          <div className="flex items-center space-x-2 z-10">
+          <div className="flex items-center space-x-4 z-10">
             {navItems.map((item) => {
               const IconComponent = item.icon;
               const isActive = location.pathname === item.path;
@@ -56,11 +60,8 @@ const Navigation = () => {
               );
             })}
             
-            {/* Status Indicator */}
-            <div className="ml-4 flex items-center space-x-2 px-4 py-2 bg-white/10 rounded-xl backdrop-blur-sm">
-              <Activity className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-white/80">LIVE</span>
-            </div>
+            {/* Data Status Indicator */}
+            <DataStatusIndicator />
           </div>
         </div>
       </div>
@@ -70,26 +71,28 @@ const Navigation = () => {
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white">
-        <Navigation />
+    <DataProvider>
+      <Router>
+        <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white">
+          <Navigation />
 
-        {/* Main Content */}
-        <main className="relative">
-          <Routes>
-            <Route path="/" element={<PremiumHomepage />} />
-            <Route path="/dashboard" element={<PremiumDashboard />} />
-            <Route path="/execution" element={<PremiumExecutionPage />} />
-            <Route path="/command" element={<CommandCenter />} />
-            <Route path="/config" element={<Configuration />} />
-            <Route path="/api-test" element={<ApiTest />} />
-          </Routes>
-        </main>
+          {/* Main Content */}
+          <main className="relative">
+            <Routes>
+              <Route path="/" element={<PremiumHomepage />} />
+              <Route path="/dashboard" element={<PremiumDashboard />} />
+              <Route path="/execution" element={<PremiumExecutionPage />} />
+              <Route path="/command" element={<CommandCenter />} />
+              <Route path="/config" element={<Configuration />} />
+              <Route path="/api-test" element={<ApiTest />} />
+            </Routes>
+          </main>
 
-        {/* Premium Chat Widget */}
-        <PremiumChatWidget />
-      </div>
-    </Router>
+          {/* Premium Chat Widget */}
+          <PremiumChatWidget />
+        </div>
+      </Router>
+    </DataProvider>
   );
 }
 

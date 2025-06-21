@@ -1,80 +1,31 @@
 import { Activity, Brain, Cpu, DollarSign, Server, TrendingDown, TrendingUp, Zap } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
-import React, { useEffect, useState } from 'react';
-import {
-  calculateProfitability,
-  fetchInventory,
-  fetchMachines,
-  fetchPrices,
-  updateMachines
-} from '../services/api';
+import React, { useState } from 'react';
+import { formatChartData, formatCurrency, getMetricColor, useData } from '../context/DataContext';
 
 import MachineAllocation from './MachineAllocation';
 import { useLiquidGlass } from './SimpleLiquidGlass';
 
 const PremiumDashboard = () => {
-  const [data, setData] = useState({ prices: [], inventory: null, profitability: null, machines: null });
-  const [loading, setLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const { 
+    prices, 
+    inventory, 
+    profitability, 
+    machines, 
+    loading, 
+    isUpdating, 
+    error, 
+    lastUpdated,
+    updateMachinesData 
+  } = useData();
+  
   const [selectedMetric, setSelectedMetric] = useState('energy');
 
   // Liquid glass refs for major components
   const chartContainerRef = useLiquidGlass({ width: 800, height: 400 });
   const metricsGridRef = useLiquidGlass({ width: 600, height: 300 });
   const assetsContainerRef = useLiquidGlass({ width: 500, height: 350 });
-
-  const loadData = async () => {
-    try {
-      const [prices, inventory, machines] = await Promise.all([
-        fetchPrices(),
-        fetchInventory(),
-        fetchMachines('947a8153-edf4-4093-aa92-e6efe0bd2682') // Using the API key from Configuration
-      ]);
-      
-      const profitability = calculateProfitability(inventory, prices);
-      setData({ prices, inventory, profitability, machines });
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatChartData = (prices) => {
-    return prices.slice().reverse().map((price, index) => ({
-      time: new Date(price.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      energy: price.energy_price,
-      hash: price.hash_price,
-      token: price.token_price,
-      index,
-      timestamp: price.timestamp
-    }));
-  };
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: value < 1 ? 4 : 2,
-      maximumFractionDigits: value < 1 ? 4 : 2
-    }).format(value);
-  };
-
-  const getMetricColor = (metric) => {
-    switch (metric) {
-      case 'energy': return { primary: '#EAB308', secondary: '#F59E0B', gradient: 'from-yellow-500 to-amber-600' };
-      case 'hash': return { primary: '#3B82F6', secondary: '#2563EB', gradient: 'from-blue-500 to-blue-600' };
-      case 'token': return { primary: '#10B981', secondary: '#059669', gradient: 'from-emerald-500 to-teal-600' };
-      default: return { primary: '#6B7280', secondary: '#4B5563', gradient: 'from-gray-500 to-gray-600' };
-    }
-  };
 
   if (loading) {
     return (
@@ -184,8 +135,8 @@ const PremiumDashboard = () => {
     );
   }
 
-  const chartData = formatChartData(data.prices);
-  const latestPrice = data.prices[0] || {};
+  const chartData = formatChartData(prices);
+  const latestPrice = prices[0] || {};
   const metricColors = getMetricColor(selectedMetric);
 
   return (
@@ -218,17 +169,17 @@ const PremiumDashboard = () => {
                 {formatCurrency(latestPrice.energy_price || 0)}
               </div>
               <div className="text-white/60 text-sm">Energy Price</div>
-              {data.prices.length >= 2 && (
+              {prices.length >= 2 && (
                 <div className="flex items-center justify-center mt-2 space-x-1">
-                  {latestPrice.energy_price > data.prices[1].energy_price ? (
+                  {latestPrice.energy_price > prices[1].energy_price ? (
                     <TrendingUp className="w-3 h-3 text-red-400" />
                   ) : (
                     <TrendingDown className="w-3 h-3 text-green-400" />
                   )}
                   <span className={`text-xs ${
-                    latestPrice.energy_price > data.prices[1].energy_price ? 'text-red-400' : 'text-green-400'
+                    latestPrice.energy_price > prices[1].energy_price ? 'text-red-400' : 'text-green-400'
                   }`}>
-                    {Math.abs(((latestPrice.energy_price - data.prices[1].energy_price) / data.prices[1].energy_price) * 100).toFixed(1)}%
+                    {Math.abs(((latestPrice.energy_price - prices[1].energy_price) / prices[1].energy_price) * 100).toFixed(1)}%
                   </span>
                 </div>
               )}
@@ -243,17 +194,17 @@ const PremiumDashboard = () => {
                 {formatCurrency(latestPrice.hash_price || 0)}
               </div>
               <div className="text-white/60 text-sm">Hash Price</div>
-              {data.prices.length >= 2 && (
+              {prices.length >= 2 && (
                 <div className="flex items-center justify-center mt-2 space-x-1">
-                  {latestPrice.hash_price > data.prices[1].hash_price ? (
+                  {latestPrice.hash_price > prices[1].hash_price ? (
                     <TrendingUp className="w-3 h-3 text-green-400" />
                   ) : (
                     <TrendingDown className="w-3 h-3 text-red-400" />
                   )}
                   <span className={`text-xs ${
-                    latestPrice.hash_price > data.prices[1].hash_price ? 'text-green-400' : 'text-red-400'
+                    latestPrice.hash_price > prices[1].hash_price ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {Math.abs(((latestPrice.hash_price - data.prices[1].hash_price) / data.prices[1].hash_price) * 100).toFixed(1)}%
+                    {Math.abs(((latestPrice.hash_price - prices[1].hash_price) / prices[1].hash_price) * 100).toFixed(1)}%
                   </span>
                 </div>
               )}
@@ -268,17 +219,17 @@ const PremiumDashboard = () => {
                 {formatCurrency(latestPrice.token_price || 0)}
               </div>
               <div className="text-white/60 text-sm">Token Price</div>
-              {data.prices.length >= 2 && (
+              {prices.length >= 2 && (
                 <div className="flex items-center justify-center mt-2 space-x-1">
-                  {latestPrice.token_price > data.prices[1].token_price ? (
+                  {latestPrice.token_price > prices[1].token_price ? (
                     <TrendingUp className="w-3 h-3 text-green-400" />
                   ) : (
                     <TrendingDown className="w-3 h-3 text-red-400" />
                   )}
                   <span className={`text-xs ${
-                    latestPrice.token_price > data.prices[1].token_price ? 'text-green-400' : 'text-red-400'
+                    latestPrice.token_price > prices[1].token_price ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {Math.abs(((latestPrice.token_price - data.prices[1].token_price) / data.prices[1].token_price) * 100).toFixed(1)}%
+                    {Math.abs(((latestPrice.token_price - prices[1].token_price) / prices[1].token_price) * 100).toFixed(1)}%
                   </span>
                 </div>
               )}
@@ -290,10 +241,10 @@ const PremiumDashboard = () => {
             <div className="relative text-center p-6">
               <DollarSign className="w-8 h-8 text-orange-500 mx-auto mb-4" />
               <div className="text-2xl font-light text-white mb-1">
-                {data.profitability ? 
+                {profitability ? 
                   formatCurrency(
-                    data.profitability.miners.reduce((sum, m) => sum + m.profit, 0) + 
-                    data.profitability.inference.reduce((sum, i) => sum + i.profit, 0)
+                    profitability.miners.reduce((sum, m) => sum + m.profit, 0) + 
+                    profitability.inference.reduce((sum, i) => sum + i.profit, 0)
                   ) : 
                   '$0.00'
                 }
@@ -343,54 +294,65 @@ const PremiumDashboard = () => {
                     <stop offset="50%" stopColor={metricColors.primary} stopOpacity={0.1}/>
                     <stop offset="95%" stopColor={metricColors.primary} stopOpacity={0}/>
                   </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
                     <feMerge> 
                       <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                  <filter id="line-glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2" result="lineBlur"/>
+                    <feMerge>
+                      <feMergeNode in="lineBlur"/>
                       <feMergeNode in="SourceGraphic"/>
                     </feMerge>
                   </filter>
                 </defs>
                 <XAxis 
                   dataKey="time" 
-                  stroke="rgba(255, 255, 255, 0.4)" 
-                  fontSize={11}
+                  stroke="rgba(255, 255, 255, 0.3)" 
+                  fontSize={10}
                   fontWeight={300}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: 'rgba(255, 255, 255, 0.6)' }}
-                  tickMargin={10}
+                  tick={{ fill: 'rgba(255, 255, 255, 0.5)', fontSize: 10 }}
+                  tickMargin={15}
+                  interval="preserveStartEnd"
                 />
                 <YAxis 
-                  stroke="rgba(255, 255, 255, 0.4)" 
-                  fontSize={11}
+                  stroke="rgba(255, 255, 255, 0.3)" 
+                  fontSize={10}
                   fontWeight={300}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: 'rgba(255, 255, 255, 0.6)' }}
-                  tickMargin={10}
+                  tick={{ fill: 'rgba(255, 255, 255, 0.5)', fontSize: 10 }}
+                  tickMargin={15}
+                  width={60}
                   tickFormatter={(value) => {
-                    if (value < 1) return `$${value.toFixed(4)}`;
-                    if (value < 100) return `$${value.toFixed(2)}`;
+                    if (value < 1) return `$${value.toFixed(3)}`;
+                    if (value < 100) return `$${value.toFixed(1)}`;
                     return `$${Math.round(value)}`;
                   }}
-                  domain={['dataMin - 0.1', 'dataMax + 0.1']}
+                  domain={['dataMin * 0.95', 'dataMax * 1.05']}
                 />
                 <Area
                   type="monotone"
                   dataKey={selectedMetric}
                   stroke={metricColors.primary}
-                  strokeWidth={2}
+                  strokeWidth={3}
                   fill={`url(#gradient-${selectedMetric})`}
                   dot={false}
                   activeDot={{ 
-                    r: 6, 
+                    r: 8, 
                     stroke: metricColors.primary, 
-                    strokeWidth: 3,
-                    fill: 'rgba(0, 0, 0, 0.8)',
-                    filter: 'url(#glow)'
+                    strokeWidth: 4,
+                    fill: 'rgba(0, 0, 0, 0.9)',
+                    filter: 'url(#glow)',
+                    style: { dropShadow: `0 0 10px ${metricColors.primary}` }
                   }}
                   connectNulls={true}
+                  animationDuration={800}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -409,9 +371,9 @@ const PremiumDashboard = () => {
               <h3 className="text-xl font-light text-white">Mining Operations</h3>
             </div>
             
-            {data.inventory && (
+            {inventory && (
               <div className="space-y-4">
-                {Object.entries(data.inventory.miners).map(([type, stats]) => {
+                {Object.entries(inventory.miners).map(([type, stats]) => {
                   const profit = stats.hashrate * (latestPrice.hash_price || 0) - stats.power * (latestPrice.energy_price || 0) / 1000;
                   const efficiency = stats.hashrate / stats.power;
                   
@@ -455,9 +417,9 @@ const PremiumDashboard = () => {
               <h3 className="text-xl font-light text-white">Inference Operations</h3>
             </div>
             
-            {data.inventory && (
+            {inventory && (
               <div className="space-y-4">
-                {Object.entries(data.inventory.inference).map(([type, stats]) => {
+                {Object.entries(inventory.inference).map(([type, stats]) => {
                   const profit = stats.tokens * (latestPrice.token_price || 0) - stats.power * (latestPrice.energy_price || 0) / 1000;
                   const efficiency = stats.tokens / stats.power;
                   
@@ -495,7 +457,7 @@ const PremiumDashboard = () => {
           </div>
 
           {/* MARA Machines Data */}
-          {data.machines && (
+          {machines && (
             <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
               <div className="flex items-center space-x-3 mb-6">
                 <Server className="w-6 h-6 text-purple-500" />
@@ -504,7 +466,7 @@ const PremiumDashboard = () => {
             
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Air Miners */}
-                {data.machines.air_miners > 0 && (
+                {machines.air_miners > 0 && (
                   <div className="group relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
@@ -512,7 +474,7 @@ const PremiumDashboard = () => {
                         <div>
                           <h4 className="text-white font-medium">Air Miners</h4>
                           <p className="text-white/60 text-sm">
-                            {data.machines.air_miners} units • {data.machines.power?.air_miners || 0}W
+                            {machines.air_miners} units • {machines.power?.air_miners || 0}W
                           </p>
                         </div>
                         <div className="w-3 h-3 rounded-full bg-green-400" />
@@ -521,11 +483,11 @@ const PremiumDashboard = () => {
                       <div className="space-y-2 text-xs text-white/50">
                         <div className="flex justify-between">
                           <span>Power:</span>
-                          <span className="text-white">{(data.machines.power?.air_miners || 0).toLocaleString()}W</span>
+                          <span className="text-white">{(machines.power?.air_miners || 0).toLocaleString()}W</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Revenue:</span>
-                          <span className="text-white">${(data.machines.revenue?.air_miners || 0).toFixed(2)}</span>
+                          <span className="text-white">${(machines.revenue?.air_miners || 0).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -533,7 +495,7 @@ const PremiumDashboard = () => {
                 )}
 
                 {/* Hydro Miners */}
-                {data.machines.hydro_miners > 0 && (
+                {machines.hydro_miners > 0 && (
                   <div className="group relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
@@ -541,7 +503,7 @@ const PremiumDashboard = () => {
                         <div>
                           <h4 className="text-white font-medium">Hydro Miners</h4>
                           <p className="text-white/60 text-sm">
-                            {data.machines.hydro_miners} units • {data.machines.power?.hydro_miners || 0}W
+                            {machines.hydro_miners} units • {machines.power?.hydro_miners || 0}W
                           </p>
                         </div>
                         <div className="w-3 h-3 rounded-full bg-green-400" />
@@ -550,11 +512,11 @@ const PremiumDashboard = () => {
                       <div className="space-y-2 text-xs text-white/50">
                         <div className="flex justify-between">
                           <span>Power:</span>
-                          <span className="text-white">{(data.machines.power?.hydro_miners || 0).toLocaleString()}W</span>
+                          <span className="text-white">{(machines.power?.hydro_miners || 0).toLocaleString()}W</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Revenue:</span>
-                          <span className="text-white">${(data.machines.revenue?.hydro_miners || 0).toFixed(2)}</span>
+                          <span className="text-white">${(machines.revenue?.hydro_miners || 0).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -562,7 +524,7 @@ const PremiumDashboard = () => {
                 )}
 
                 {/* Immersion Miners */}
-                {data.machines.immersion_miners > 0 && (
+                {machines.immersion_miners > 0 && (
                   <div className="group relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
@@ -570,7 +532,7 @@ const PremiumDashboard = () => {
                         <div>
                           <h4 className="text-white font-medium">Immersion Miners</h4>
                           <p className="text-white/60 text-sm">
-                            {data.machines.immersion_miners} units • {data.machines.power?.immersion_miners || 0}W
+                            {machines.immersion_miners} units • {machines.power?.immersion_miners || 0}W
                           </p>
                         </div>
                         <div className="w-3 h-3 rounded-full bg-green-400" />
@@ -579,11 +541,11 @@ const PremiumDashboard = () => {
                       <div className="space-y-2 text-xs text-white/50">
                         <div className="flex justify-between">
                           <span>Power:</span>
-                          <span className="text-white">{(data.machines.power?.immersion_miners || 0).toLocaleString()}W</span>
+                          <span className="text-white">{(machines.power?.immersion_miners || 0).toLocaleString()}W</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Revenue:</span>
-                          <span className="text-white">${(data.machines.revenue?.immersion_miners || 0).toFixed(2)}</span>
+                          <span className="text-white">${(machines.revenue?.immersion_miners || 0).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -591,7 +553,7 @@ const PremiumDashboard = () => {
                 )}
 
                 {/* GPU Compute */}
-                {data.machines.gpu_compute > 0 && (
+                {machines.gpu_compute > 0 && (
                   <div className="group relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
@@ -599,7 +561,7 @@ const PremiumDashboard = () => {
                         <div>
                           <h4 className="text-white font-medium">GPU Compute</h4>
                           <p className="text-white/60 text-sm">
-                            {data.machines.gpu_compute} units • {data.machines.power?.gpu_compute || 0}W
+                            {machines.gpu_compute} units • {machines.power?.gpu_compute || 0}W
                           </p>
                         </div>
                         <div className="w-3 h-3 rounded-full bg-green-400" />
@@ -608,11 +570,11 @@ const PremiumDashboard = () => {
                       <div className="space-y-2 text-xs text-white/50">
                         <div className="flex justify-between">
                           <span>Power:</span>
-                          <span className="text-white">{(data.machines.power?.gpu_compute || 0).toLocaleString()}W</span>
+                          <span className="text-white">{(machines.power?.gpu_compute || 0).toLocaleString()}W</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Revenue:</span>
-                          <span className="text-white">${(data.machines.revenue?.gpu_compute || 0).toFixed(2)}</span>
+                          <span className="text-white">${(machines.revenue?.gpu_compute || 0).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -620,7 +582,7 @@ const PremiumDashboard = () => {
                 )}
 
                 {/* ASIC Compute */}
-                {data.machines.asic_compute > 0 && (
+                {machines.asic_compute > 0 && (
                   <div className="group relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="relative bg-white/5 rounded-xl p-4 border border-white/10">
@@ -628,7 +590,7 @@ const PremiumDashboard = () => {
                         <div>
                           <h4 className="text-white font-medium">ASIC Compute</h4>
                           <p className="text-white/60 text-sm">
-                            {data.machines.asic_compute} units • {data.machines.power?.asic_compute || 0}W
+                            {machines.asic_compute} units • {machines.power?.asic_compute || 0}W
                           </p>
                         </div>
                         <div className="w-3 h-3 rounded-full bg-green-400" />
@@ -637,11 +599,11 @@ const PremiumDashboard = () => {
                       <div className="space-y-2 text-xs text-white/50">
                         <div className="flex justify-between">
                           <span>Power:</span>
-                          <span className="text-white">{(data.machines.power?.asic_compute || 0).toLocaleString()}W</span>
+                          <span className="text-white">{(machines.power?.asic_compute || 0).toLocaleString()}W</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Revenue:</span>
-                          <span className="text-white">${(data.machines.revenue?.asic_compute || 0).toFixed(2)}</span>
+                          <span className="text-white">${(machines.revenue?.asic_compute || 0).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -653,25 +615,25 @@ const PremiumDashboard = () => {
               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-white/5 rounded-xl border border-white/10">
                 <div className="text-center">
                   <div className="text-2xl font-light text-white mb-1">
-                    {(data.machines.total_power_used || 0).toLocaleString()}
+                    {(machines.total_power_used || 0).toLocaleString()}
                   </div>
                   <div className="text-white/60 text-sm">Total Power (W)</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-light text-white mb-1">
-                    ${(data.machines.total_revenue || 0).toFixed(2)}
+                    ${(machines.total_revenue || 0).toFixed(2)}
                   </div>
                   <div className="text-white/60 text-sm">Total Revenue</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-light text-white mb-1">
-                    ${(data.machines.total_power_cost || 0).toFixed(2)}
+                    ${(machines.total_power_cost || 0).toFixed(2)}
                   </div>
                   <div className="text-white/60 text-sm">Power Cost</div>
                 </div>
               </div>
               
-              {!data.machines.air_miners && !data.machines.hydro_miners && !data.machines.immersion_miners && !data.machines.gpu_compute && !data.machines.asic_compute && (
+              {!machines.air_miners && !machines.hydro_miners && !machines.immersion_miners && !machines.gpu_compute && !machines.asic_compute && (
                 <div className="text-center py-8">
                   <Server className="w-12 h-12 text-white/40 mx-auto mb-4" />
                   <p className="text-white/60">No machines data available</p>
@@ -680,17 +642,16 @@ const PremiumDashboard = () => {
             </div>
           )}
 
-          {data.machines && (
+          {machines && (
             <MachineAllocation
               apiKey="947a8153-edf4-4093-aa92-e6efe0bd2682"
               initialAllocation={{
-                air_miners: data.machines.air_miners || 0,
-                hydro_miners: data.machines.hydro_miners || 0,
-                immersion_miners: data.machines.immersion_miners || 0,
-                gpu_compute: data.machines.gpu_compute || 0,
-                asic_compute: data.machines.asic_compute || 0,
+                air_miners: machines.air_miners || 0,
+                hydro_miners: machines.hydro_miners || 0,
+                immersion_miners: machines.immersion_miners || 0,
+                gpu_compute: machines.gpu_compute || 0,
+                asic_compute: machines.asic_compute || 0,
               }}
-              onAllocationChange={loadData}
             />
           )}
         </div>

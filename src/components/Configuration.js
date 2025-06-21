@@ -24,17 +24,21 @@ import React, { useEffect, useState } from 'react';
 
 import AnimatedNumber from './AnimatedNumber';
 import { motion } from 'framer-motion';
+import { useData } from '../context/DataContext';
 import { useLiquidGlass } from './SimpleLiquidGlass';
 
 const Configuration = () => {
   const [activeSection, setActiveSection] = useState('api');
   const [showPasswords, setShowPasswords] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [debugResponse, setDebugResponse] = useState(null);
+  const { ...globalDataContext } = useData();
   const [expandedSections, setExpandedSections] = useState({
     api: true,
     wattson: false,
     notifications: false,
-    security: false
+    security: false,
+    debug: false
   });
 
   // Configuration states
@@ -150,6 +154,7 @@ const Configuration = () => {
   };
 
   const handleFetchMachines = async () => {
+    setDebugResponse('Fetching...');
     try {
       console.log('Fetching machines with API key:', config.apiKey);
       
@@ -164,11 +169,27 @@ const Configuration = () => {
       }
 
       const result = await response.json();
-      console.log('Machines data received:', result);
+      setDebugResponse(JSON.stringify(result, null, 2));
       
     } catch (error) {
       console.error('Error fetching machines:', error);
+      setDebugResponse(JSON.stringify(error, null, 2));
     }
+  };
+
+  const handleShowGlobalContext = () => {
+    console.log('Global Data Context:', globalDataContext);
+    const dataOnlyContext = {
+        prices: globalDataContext.prices,
+        inventory: globalDataContext.inventory,
+        profitability: globalDataContext.profitability,
+        machines: globalDataContext.machines,
+        loading: globalDataContext.loading,
+        isUpdating: globalDataContext.isUpdating,
+        error: globalDataContext.error,
+        lastUpdated: globalDataContext.lastUpdated,
+    }
+    setDebugResponse(JSON.stringify(dataOnlyContext, null, 2));
   };
 
   const configSections = [
@@ -195,6 +216,12 @@ const Configuration = () => {
       title: 'Security',
       icon: <Shield className="w-5 h-5" />,
       description: 'Access control and encryption'
+    },
+    {
+      id: 'debug',
+      title: 'Debug',
+      icon: <Zap className="w-5 h-5" />,
+      description: 'Developer debug tools'
     }
   ];
 
@@ -549,12 +576,52 @@ const Configuration = () => {
     </motion.div>
   );
 
+  const renderDebugConfiguration = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-8"
+    >
+        <h4 className="text-lg font-medium text-white/90 mb-4">Debug Tools</h4>
+        <div className="space-y-4">
+          <motion.button
+            onClick={handleFetchMachines}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all backdrop-blur-sm shadow-lg"
+          >
+            <Server className="w-5 h-5" />
+            <span>Fetch Machines Data</span>
+          </motion.button>
+
+          <motion.button
+            onClick={handleShowGlobalContext}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl transition-all backdrop-blur-sm shadow-lg"
+          >
+            <Database className="w-5 h-5" />
+            <span>Show Global Context</span>
+          </motion.button>
+          
+          {debugResponse && (
+            <div className="bg-black/50 rounded-lg p-4">
+              <pre className="text-xs text-white/80 whitespace-pre-wrap">
+                <code>{debugResponse}</code>
+              </pre>
+            </div>
+          )}
+        </div>
+    </motion.div>
+  );
+
   const renderConfigurationContent = () => {
     switch (activeSection) {
       case 'api': return renderApiConfiguration();
       case 'wattson': return renderWattsonConfiguration();
       case 'notifications': return renderNotificationConfiguration();
       case 'security': return renderSecurityConfiguration();
+      case 'debug': return renderDebugConfiguration();
       default: return renderApiConfiguration();
     }
   };

@@ -472,9 +472,18 @@ const PremiumExecutionPage = () => {
           className="mb-12 bg-black/40 backdrop-blur-xl rounded-3xl border border-white/10"
         >
           <div className="p-8 border-b border-white/10">
-            <div className="flex items-center space-x-4">
-              <Brain className="w-8 h-8 text-orange-400" />
-              <h2 className="text-3xl font-light text-white">Strategic Recommendations</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Brain className="w-8 h-8 text-orange-400" />
+                <div>
+                  <h2 className="text-3xl font-light text-white">Strategic Recommendations</h2>
+                  <p className="text-white/60 text-sm mt-1">AI-powered optimization strategies</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-white/40 text-xs">Last Updated</div>
+                <div className="text-white text-sm">{new Date().toLocaleTimeString()}</div>
+              </div>
             </div>
           </div>
 
@@ -547,39 +556,43 @@ const PremiumExecutionPage = () => {
                       </div>
 
                       {/* Content Section */}
-                      <div className="p-6">
-                        <p className="text-white/80 text-base leading-relaxed mb-6">{rec.description}</p>
+                      <div className="p-6 space-y-6">
+                        <p className="text-white/80 text-base leading-relaxed">{rec.description}</p>
                         
                         {/* Metrics Grid */}
-                        <div className="grid grid-cols-2 gap-6 mb-6">
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-white/60 text-sm">Confidence</span>
-                              <span className={`font-mono text-sm ${getConfidenceColor(rec.confidence)}`}>
-                                {rec.confidence}%
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-white/60 text-sm">Timeframe</span>
-                              <span className="text-white text-sm">{rec.timeframe}</span>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="text-white/60 text-xs mb-1">Confidence</div>
+                            <div className={`font-mono text-lg ${getConfidenceColor(rec.confidence)}`}>
+                              {rec.confidence}%
                             </div>
                           </div>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-white/60 text-sm">Profit Impact</span>
-                              <span className="text-green-400 font-medium text-sm">{rec.profit_impact}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-white/60 text-sm">Carbon Impact</span>
-                              <span className="text-emerald-400 font-medium text-sm">{rec.carbon_impact}</span>
-                            </div>
+                          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="text-white/60 text-xs mb-1">Timeframe</div>
+                            <div className="text-white text-lg font-medium">{rec.timeframe}</div>
+                          </div>
+                          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="text-white/60 text-xs mb-1">Profit Impact</div>
+                            <div className="text-green-400 font-medium text-lg">{rec.profit_impact}</div>
+                          </div>
+                          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="text-white/60 text-xs mb-1">Carbon Impact</div>
+                            <div className="text-emerald-400 font-medium text-lg">{rec.carbon_impact}</div>
                           </div>
                         </div>
                         
                         {/* Sherlock Insight */}
                         {rec.sherlock_insight && (
-                          <div className="p-4 bg-orange-500/10 rounded-xl border border-orange-500/20 mb-6">
-                            <p className="text-orange-200 text-sm italic">"{rec.sherlock_insight}"</p>
+                          <div className="p-4 bg-gradient-to-r from-orange-500/10 to-amber-500/10 rounded-xl border border-orange-500/20">
+                            <div className="flex items-start space-x-3">
+                              <div className="p-2 bg-orange-500/20 rounded-lg flex-shrink-0">
+                                <Brain className="w-4 h-4 text-orange-400" />
+                              </div>
+                              <div>
+                                <div className="text-orange-300 text-xs font-medium mb-1">WATTSON AI INSIGHT</div>
+                                <p className="text-orange-200 text-sm italic">"{rec.sherlock_insight}"</p>
+                              </div>
+                            </div>
                           </div>
                         )}
 
