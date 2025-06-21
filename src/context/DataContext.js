@@ -272,6 +272,7 @@ export const formatChartData = (prices) => {
     energy: price.energy_price,
     hash: price.hash_price,
     token: price.token_price,
+    value: price.token_price,
     index,
     timestamp: price.timestamp
   }));
