@@ -149,6 +149,28 @@ const Configuration = () => {
     }
   };
 
+  const handleFetchMachines = async () => {
+    try {
+      console.log('Fetching machines with API key:', config.apiKey);
+      
+      const response = await fetch('http://localhost:3001/api/machines', {
+        headers: {
+          'X-Api-Key': config.apiKey
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Machines data received:', result);
+      
+    } catch (error) {
+      console.error('Error fetching machines:', error);
+    }
+  };
+
   const configSections = [
     {
       id: 'api',
@@ -240,6 +262,16 @@ const Configuration = () => {
                 <span className="text-white font-medium">Create Site</span>
               </>
             )}
+          </motion.button>
+
+          <motion.button
+            onClick={handleFetchMachines}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all backdrop-blur-sm shadow-lg"
+          >
+            <Server className="w-4 h-4 text-white" />
+            <span className="text-white font-medium">Fetch Machines</span>
           </motion.button>
           
           {config.sitePower > 0 && (

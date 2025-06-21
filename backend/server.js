@@ -96,6 +96,49 @@ app.post('/api/sites', async (req, res) => {
   }
 });
 
+// API endpoint to fetch machines from Mara Hackathon API with API key
+app.get('/api/machines', async (req, res) => {
+  try {
+    const apiKey = req.headers['x-api-key'];
+    
+    if (!apiKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'X-Api-Key header is required',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    console.log('Fetching machines from Mara Hackathon API...');
+    console.log('Using API Key:', apiKey);
+    
+    const response = await axios.get('https://mara-hackathon-api.onrender.com/machines', {
+      headers: {
+        'X-Api-Key': apiKey
+      }
+    });
+    
+    console.log('Machines API Response received:');
+    console.log('Status:', response.status);
+    console.log('Machines data:');
+    console.log(JSON.stringify(response.data, null, 2));
+    
+    res.json({
+      success: true,
+      data: response.data,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error fetching machines:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Simple test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is running!' });
@@ -107,4 +150,5 @@ app.listen(PORT, () => {
   console.log(`Test endpoint: http://localhost:${PORT}/api/test`);
   console.log(`Prices endpoint: http://localhost:${PORT}/api/prices`);
   console.log(`Inventory endpoint: http://localhost:${PORT}/api/inventory`);
+  console.log(`Machines endpoint: http://localhost:${PORT}/api/machines`);
 }); 
