@@ -442,6 +442,110 @@ Please provide a valid JSON response with the exact format specified above. Calc
   }
 });
 
+// Endpoint to generate a detailed summary after an action is executed
+app.post('/api/execution-summary', async (req, res) => {
+  try {
+    const { action, globalContext, apiKey } = req.body;
+
+    if (!action || !globalContext || !apiKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Action, global context, and API key are required',
+      });
+    }
+
+    console.log('Generating execution summary...');
+
+    const summaryPrompt = `
+An action was just executed to optimize a cryptocurrency mining and AI inference operation.
+Based on the executed action and the state of the system before the action, generate a detailed analysis of the execution.
+
+**Executed Action:**
+${JSON.stringify(action, null, 2)}
+
+**System State Before Action:**
+${JSON.stringify(globalContext, null, 2)}
+
+Your task is to generate a JSON object that provides a detailed breakdown of the execution's outcome. The tone should be professional and data-driven.
+
+The JSON object must have the following structure:
+{
+  "system_components_affected": [ "Component 1", "Component 2", "..." ],
+  "performance_metrics": [
+    { "metric": "Fleet Utilization", "value": "XX.X%", "comment": "(+X.X% improvement)" },
+    { "metric": "Power Efficiency", "value": "XX.X%", "comment": "(optimal range)" },
+    { "metric": "Network Latency", "value": "XXms", "comment": "(excellent)" },
+    { "metric": "Profitability", "value": "+$XXXX/hr", "comment": "projected" }
+  ],
+  "next_recommended_actions": [
+    "Monitor performance for 24 hours",
+    "Review efficiency trends weekly",
+    "Schedule maintenance in 30 days"
+  ]
+}
+
+**Instructions for generating the content:**
+1.  **system_components_affected**: Identify the main parts of the operation impacted by the change. Examples: "Mining Fleet", "Energy Management", "AI Inference". List 2-4 components.
+2.  **performance_metrics**: Generate 3-4 key performance indicators that would logically be affected by the action.
+    *   For each metric, provide a realistic "value" and a brief "comment".
+    *   The values should reflect a positive outcome from the executed action. For example, if miners were re-allocated for profit, show an improvement in fleet utilization or profitability.
+    *   Metrics can include: Fleet Utilization, Power Efficiency, Network Latency, Profitability, Hash Rate, etc.
+3.  **next_recommended_actions**: Provide a list of 3 logical follow-up actions for an operator to take. These should be prudent operational steps.
+
+Provide ONLY the raw JSON object in your response, without any surrounding text or markdown.
+    `;
+
+    // Call Anthropic API
+    const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+    if (!ANTHROPIC_API_KEY) {
+        return res.status(500).json({
+            success: false,
+            error: 'Anthropic API key not configured',
+        });
+    }
+
+    const response = await axios.post('https://api.anthropic.com/v1/messages', {
+        model: "claude-3-opus-20240229",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: summaryPrompt }]
+    }, {
+        headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json'
+        }
+    });
+
+    const aiResponse = response.data.content[0].text;
+    console.log('AI Execution Summary Response:', aiResponse);
+
+    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const summaryResult = JSON.parse(jsonMatch[0]);
+      res.json({
+        success: true,
+        data: summaryResult,
+      });
+    } else {
+      throw new Error('No JSON found in AI response for execution summary');
+    }
+
+  } catch (error) {
+    console.error('Error in execution-summary endpoint:', error.message);
+    if (error.response) {
+      console.error('Error response data:', error.response.data);
+      return res.status(error.response.status).json({
+        success: false,
+        error: error.response.data,
+      });
+    }
+    res.status(500).json({
+        success: false,
+        error: error.message,
+    });
+  }
+});
+
 // Simple test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is running!' });
@@ -456,4 +560,5 @@ app.listen(PORT, () => {
   console.log(`Machines endpoint: GET http://localhost:${PORT}/api/machines`);
   console.log(`Manage Machines endpoint: PUT http://localhost:${PORT}/api/machines`);
   console.log(`Analysis endpoint: POST http://localhost:${PORT}/api/analysis`);
+  console.log(`Execution Summary endpoint: POST http://localhost:${PORT}/api/execution-summary`);
 }); 

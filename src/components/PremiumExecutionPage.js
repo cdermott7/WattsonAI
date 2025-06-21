@@ -21,6 +21,7 @@ import { calculateProfitability, fetchInventory, fetchPrices } from '../services
 
 import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
 import SuccessNotification from './SuccessNotification';
+import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useData } from '../context/DataContext';
 import { useLiquidGlass } from './SimpleLiquidGlass';
@@ -31,7 +32,8 @@ const PremiumExecutionPage = () => {
     isAnalyzing, 
     analysisError, 
     performAnalysis,
-    updateMachinesData 
+    updateMachinesData,
+    apiKey
   } = useData();
   
   const [data, setData] = useState({ prices: [], inventory: null, profitability: null });
@@ -45,7 +47,8 @@ const PremiumExecutionPage = () => {
     show: false,
     title: '',
     message: '',
-    impact: null
+    impact: null,
+    details: null
   });
   
   // Liquid glass refs for major sections
@@ -347,19 +350,48 @@ const PremiumExecutionPage = () => {
   const handleExecuteAnalysisAction = async (action) => {
     if (action.type === 'api_call' && action.body) {
       try {
-        await updateMachinesData(action.body);
-        // Show success notification
+        // Show success notification immediately, without details
         setSuccessNotification({
           show: true,
           title: 'Allocation Updated',
           message: 'Machine allocation has been successfully updated based on AI analysis.',
           impact: {
-            revenue: '+$3,247/hour',
-            efficiency: '+12.3%'
-          }
+            revenue: action.profit_impact,
+            efficiency: '+12.3%' // This can be part of a future enhancement
+          },
+          details: null // Details will be loaded in the background
         });
+
+        // Update machines and fetch details in parallel
+        await updateMachinesData(action.body);
+        
+        // After successful execution, get the detailed analysis
+        const summaryResponse = await axios.post('http://localhost:3001/api/execution-summary', {
+          action,
+          globalContext: {
+            prices: data.prices,
+            inventory: data.inventory,
+          },
+          apiKey: apiKey
+        });
+      
+        const detailedAnalysis = summaryResponse.data.data;
+
+        // Update the notification with the details
+        setSuccessNotification(prev => ({
+            ...prev,
+            details: detailedAnalysis
+        }));
+
       } catch (error) {
         console.error('Error executing analysis action:', error);
+        // Optionally, update the notification to show an error
+        setSuccessNotification(prev => ({
+            ...prev,
+            title: 'Update Failed',
+            message: 'There was an error updating the machine allocation.',
+            details: { error: 'Could not retrieve execution analysis.' }
+        }));
       }
     }
   };
@@ -989,6 +1021,7 @@ const PremiumExecutionPage = () => {
         title={successNotification.title}
         message={successNotification.message}
         impact={successNotification.impact}
+        details={successNotification.details}
         onClose={() => setSuccessNotification(prev => ({ ...prev, show: false }))}
       />
     </div>
