@@ -3,8 +3,10 @@ import { fetchPrices, fetchInventory, calculateProfitability } from '../services
 import { useLiquidGlass } from './SimpleLiquidGlass';
 import MarkdownRenderer from './MarkdownRenderer';
 import { Send, Mic, MicOff, Brain, User, Minimize2, Maximize2 } from 'lucide-react';
+import { useData } from '../context/DataContext';
 
 const PremiumChatWidget = () => {
+  const { apiKey, siteName } = useData();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -91,8 +93,9 @@ const PremiumChatWidget = () => {
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+    setInputText('');
 
-    // Exclude initial AI greeting from API conversation history
+    // Prepare messages for Claude API
     const messagesForAPI = [...messages.slice(1), userMessage].map(m => ({
       role: m.type === 'user' ? 'user' : 'assistant',
       content: m.content
@@ -102,7 +105,7 @@ const PremiumChatWidget = () => {
       const response = await fetch('http://localhost:3001/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: messagesForAPI })
+        body: JSON.stringify({ messages: messagesForAPI, apiKey, siteName })
       });
       const result = await response.json();
       const aiContent = result.success ? result.completion : `Error: ${result.error}`;
@@ -126,8 +129,6 @@ const PremiumChatWidget = () => {
     } finally {
       setIsLoading(false);
     }
-
-    setInputText('');
   };
 
   const handleVoiceInput = () => {
@@ -269,7 +270,7 @@ const PremiumChatWidget = () => {
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Ask Wattson about operations..."
                   className="flex-1 bg-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 backdrop-blur-sm border border-white/20 placeholder-white/50"
                 />

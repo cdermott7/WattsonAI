@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLiquidGlass } from './SimpleLiquidGlass';
-import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
-import { performanceMetrics, liveEvents, marketData, fleetData } from '../services/enhancedMockData';
+import { useData } from '../context/DataContext';
+import { liveEvents } from '../services/enhancedMockData';
 import AnimatedNumber from './AnimatedNumber';
 import SuccessNotification from './SuccessNotification';
 import MarkdownRenderer from './MarkdownRenderer';
@@ -70,7 +70,8 @@ const CommandCenter = () => {
   const [showProfitReport, setShowProfitReport] = useState(false);
   const [profitReportData, setProfitReportData] = useState(null);
   
-  const wattson = new EnhancedWattsonAI();
+  const { apiKey, siteName } = useData();
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
   
   // Liquid glass containers
   const heroRef = useLiquidGlass({ width: 1200, height: 300 });
@@ -155,32 +156,30 @@ const CommandCenter = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputText.trim()) return;
-
-    const userMessage = {
-      id: Date.now(),
-      type: 'user',
-      content: inputText,
-      timestamp: new Date()
-    };
-
+    const userMessage = { id: Date.now(), type: 'user', content: inputText, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
-    
-    setTimeout(() => {
-      const aiResponse = wattson.processAdvancedQuery(inputText);
-      const aiMessage = {
-        id: Date.now() + 1,
-        type: 'ai',
-        content: aiResponse,
-        timestamp: new Date(),
-        confidence: Math.floor(Math.random() * 20) + 80
-      };
-      
-      setMessages(prev => [...prev, aiMessage]);
-    }, 1000);
-
+    setIsLoadingChat(true);
     setInputText('');
+    // build conversation excluding initial greeting
+    const history = [...messages.slice(1), userMessage];
+    const messagesForAPI = history.map(m => ({ role: m.type === 'user' ? 'user' : 'assistant', content: m.content }));
+    try {
+      const response = await fetch('http://localhost:3001/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: messagesForAPI, apiKey, siteName })
+      });
+      const result = await response.json();
+      const aiContent = result.success ? result.completion : `Error: ${result.error}`;
+      const aiMessage = { id: Date.now()+1, type: 'ai', content: aiContent, timestamp: new Date(), confidence: null };
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error fetching AI response:', error);
+      setMessages(prev => [...prev, { id: Date.now()+1, type:'ai', content:'Sorry, error processing request.', timestamp:new Date(), confidence:null }]);
+    } finally {
+      setIsLoadingChat(false);
+    }
   };
 
   const handleNotificationClick = (notification) => {
@@ -699,6 +698,20 @@ Order Status: **ACTIVE** | Monitoring: **CONTINUOUS**`,
                     </div>
                   </motion.div>
                 ))}
+                {isLoadingChat && (
+                  <div className="flex justify-start">
+                    <div className="bg-white/10 backdrop-blur-sm text-gray-100 px-4 py-2 rounded-2xl border border-white/20">
+                      <div className="flex items-center space-x-2">
+                        <Brain className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">

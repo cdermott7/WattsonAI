@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchPrices, fetchInventory, calculateProfitability } from '../services/api';
 import { MessageSquare, Send, Mic, MicOff, Bot, User } from 'lucide-react';
+import { useData } from '../context/DataContext';
 
 const ChatWidget = () => {
   const [messages, setMessages] = useState([
@@ -23,6 +24,8 @@ const ChatWidget = () => {
   
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
+
+  const { apiKey, siteName } = useData();
 
   useEffect(() => {
     const loadData = async () => {
@@ -94,6 +97,7 @@ const ChatWidget = () => {
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+    setInputText('');
 
     // Prepare messages for Claude API
     const messagesForAPI = [...messages, userMessage].map(m => ({
@@ -105,7 +109,7 @@ const ChatWidget = () => {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: messagesForAPI })
+        body: JSON.stringify({ messages: messagesForAPI, apiKey, siteName })
       });
       const result = await response.json();
       const aiContent = result.success ? result.completion : `Error: ${result.error}`;
@@ -127,8 +131,6 @@ const ChatWidget = () => {
     } finally {
       setIsLoading(false);
     }
-
-    setInputText('');
   };
 
   const handleVoiceInput = () => {
@@ -235,7 +237,7 @@ const ChatWidget = () => {
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Ask Wattson about your operations..."
             className="flex-1 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
