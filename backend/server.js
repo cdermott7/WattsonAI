@@ -66,6 +66,36 @@ app.get('/api/inventory', async (req, res) => {
   }
 });
 
+// API endpoint to create a new site via Mara Hackathon API
+app.post('/api/sites', async (req, res) => {
+  try {
+    console.log('Creating site via Mara Hackathon API...');
+    console.log('Request body:', req.body);
+    
+    const response = await axios.post('https://mara-hackathon-api.onrender.com/sites', {
+      name: req.body.name
+    });
+    
+    console.log('Site creation API Response received:');
+    console.log('Status:', response.status);
+    console.log('Response data:', JSON.stringify(response.data, null, 2));
+    
+    res.json({
+      success: true,
+      data: response.data,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error creating site:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Simple test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is running!' });

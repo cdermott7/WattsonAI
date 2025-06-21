@@ -1,29 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useLiquidGlass } from './SimpleLiquidGlass';
-import AnimatedNumber from './AnimatedNumber';
-import { 
-  Settings, 
-  Save, 
-  Shield, 
-  Bell, 
-  Brain, 
-  Key, 
-  Server, 
-  Eye, 
-  EyeOff,
+import {
+  AlertTriangle,
+  Bell,
+  Brain,
+  CheckCircle,
   ChevronDown,
   ChevronRight,
-  CheckCircle,
-  AlertTriangle,
-  Zap,
-  Mail,
-  Smartphone,
+  Database,
+  Eye,
+  EyeOff,
   Globe,
+  Key,
   Lock,
+  Mail,
+  Save,
+  Server,
+  Settings,
+  Shield,
+  Smartphone,
   User,
-  Database
+  Zap
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+
+import AnimatedNumber from './AnimatedNumber';
+import { motion } from 'framer-motion';
+import { useLiquidGlass } from './SimpleLiquidGlass';
 
 const Configuration = () => {
   const [activeSection, setActiveSection] = useState('api');
@@ -44,6 +45,8 @@ const Configuration = () => {
     refreshInterval: 30,
     timeout: 10000,
     retryAttempts: 3,
+    siteName: 'HackFestSite',
+    sitePower: 1000000,
     
     // Wattson AI Configuration
     wattsonPersonality: 'sherlock',
@@ -109,6 +112,43 @@ const Configuration = () => {
     }, 2000);
   };
 
+  const handleCreateSite = async () => {
+    setIsSaving(true);
+    
+    try {
+      const response = await fetch('http://localhost:3001/api/sites', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: config.siteName
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Auto-populate the configuration with the returned values
+      setConfig(prev => ({
+        ...prev,
+        apiKey: result.data.api_key,
+        sitePower: result.data.power
+      }));
+
+      // Show success notification
+      console.log('Site created successfully:', result.data);
+    } catch (error) {
+      console.error('Error creating site:', error);
+      // Show error notification
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const configSections = [
     {
       id: 'api',
@@ -169,6 +209,47 @@ const Configuration = () => {
               {showPasswords.apiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-white/80 text-sm font-medium mb-3">Site Name</label>
+          <input
+            type="text"
+            value={config.siteName}
+            onChange={(e) => handleConfigChange('api', 'siteName', e.target.value)}
+            className="w-full bg-white/10 text-white rounded-xl px-4 py-3 border border-white/20 focus:outline-none focus:ring-2 focus:ring-orange-500/50 backdrop-blur-sm"
+          />
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <motion.button
+            onClick={handleCreateSite}
+            disabled={isSaving}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all backdrop-blur-sm shadow-lg"
+          >
+            {isSaving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span className="text-white font-medium">Creating...</span>
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 text-white" />
+                <span className="text-white font-medium">Create Site</span>
+              </>
+            )}
+          </motion.button>
+          
+          {config.sitePower > 0 && (
+            <div className="flex items-center space-x-2 px-4 py-2 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
+              <Zap className="w-4 h-4 text-emerald-400" />
+              <span className="text-emerald-400 text-sm font-medium">
+                Power: {config.sitePower.toLocaleString()} W
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-6">
