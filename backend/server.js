@@ -277,6 +277,159 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// Analysis endpoint for AI-powered analysis of global context
+app.post('/api/analysis', async (req, res) => {
+  try {
+    const { globalContext, apiKey } = req.body;
+    
+    if (!globalContext) {
+      return res.status(400).json({
+        success: false,
+        error: 'Global context is required',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (!apiKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'API key is required',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    console.log('Performing AI analysis of global context...');
+    console.log('API Key:', apiKey);
+    console.log('Global context keys:', Object.keys(globalContext));
+
+    // Create the analysis prompt
+    const analysisPrompt = `Analyze the following data from the MARA Hackathon 2025 API documentation. Your response should include:
+
+1. **Status**: A "Green", "Yellow", or "Red" indicator based on the profitability and current market conditions.
+   * **Green**: Favorable prices and inventory for profitable operations.
+   * **Yellow**: Some concerns, like fluctuating prices or limited inventory, warranting caution.
+   * **Red**: Unfavorable prices, high costs, or severely limited inventory, indicating potential losses or major operational issues.
+
+2. **Summary**: A concise summary of the current pricing trends (energy, hash, token) and available inventory (miners, inference machines), highlighting any significant changes or imbalances. Focus on the most recent price data provided.
+
+3. **Actions**: A list of actionable recommendations based on the pricing and inventory information. These actions should aim to optimize revenue, minimize costs, and efficiently utilize available resources. Consider strategies like:
+   * Adjusting allocations of different miner types (air, hydro, immersion).
+   * Adjusting allocations of different inference types (ASIC, GPU).
+   * Prioritizing operations based on profitability.
+   * Any other relevant strategic moves.
+
+**Data to analyze:**
+
+${JSON.stringify(globalContext, null, 2)}
+
+Output Format:
+
+{
+  "status": "[[STATUS]]",
+  "summary": "[[SUMMARY]]",
+  "actions": [
+    {
+      "type": "api_call",
+      "endpoint": "https://mara-hackathon-api.onrender.com/machines",
+      "method": "PUT",
+      "headers": {
+        "X-Api-Key": "${apiKey}"
+      },
+      "body": {
+        "asic_miners": "[[OPTIMAL_ASIC_MINERS]]",
+        "gpu_compute": "[[OPTIMAL_GPU_COMPUTE]]",
+        "asic_compute": "[[OPTIMAL_ASIC_COMPUTE]]",
+        "immersion_miners": "[[OPTIMAL_IMMERSION_MINERS]]",
+        "air_miners": "[[OPTIMAL_AIR_MINERS]]",
+        "hydro_miners": "[[OPTIMAL_HYDRO_MINERS]]"
+      },
+      "description": "[[rationale]]"
+    }
+  ]
+}
+
+Please provide a valid JSON response with the exact format specified above.`;
+
+    // Call Anthropic API for analysis
+    const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+    
+    if (!ANTHROPIC_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: 'Anthropic API key not configured',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const response = await axios.post('https://api.anthropic.com/v1/messages', {
+      model: "claude-3-opus-20240229",
+      max_tokens: 2048,
+      messages: [
+        { 
+          role: "user", 
+          content: analysisPrompt
+        }
+      ]
+    }, {
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      }
+    });
+
+    console.log('Anthropic API Response received:');
+    console.log('Status:', response.status);
+    
+    // Parse the AI response
+    const aiResponse = response.data.content[0].text;
+    console.log('AI Response:', aiResponse);
+
+    // Try to extract JSON from the response
+    let analysisResult;
+    try {
+      // Look for JSON in the response
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        analysisResult = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON found in response');
+      }
+    } catch (parseError) {
+      console.error('Error parsing AI response:', parseError);
+      // Return a fallback response
+      analysisResult = {
+        status: "Yellow",
+        summary: "Unable to parse AI analysis. Please check the data and try again.",
+        actions: []
+      };
+    }
+
+    res.json({
+      success: true,
+      data: analysisResult,
+      rawResponse: aiResponse,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error in analysis endpoint:', error);
+    if (error.response) {
+      console.error('Error response data:', error.response.data);
+      return res.status(error.response.status).json({
+        success: false,
+        error: error.response.data,
+        timestamp: new Date().toISOString()
+      });
+    }
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Simple test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is running!' });
@@ -290,4 +443,5 @@ app.listen(PORT, () => {
   console.log(`Inventory endpoint: http://localhost:${PORT}/api/inventory`);
   console.log(`Machines endpoint: GET http://localhost:${PORT}/api/machines`);
   console.log(`Manage Machines endpoint: PUT http://localhost:${PORT}/api/machines`);
+  console.log(`Analysis endpoint: POST http://localhost:${PORT}/api/analysis`);
 }); 
