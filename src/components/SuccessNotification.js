@@ -1,8 +1,8 @@
+import { Activity, CheckCircle, Clock, Cpu, Loader2, TrendingUp, X, Zap } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, X, Zap, TrendingUp } from 'lucide-react';
 
-const SuccessNotification = ({ show, onClose, title, message, impact }) => {
+const SuccessNotification = ({ show, onClose, title, message, impact, details }) => {
   const [showDetails, setShowDetails] = useState(false);
   return (
     <AnimatePresence>
@@ -123,53 +123,57 @@ const SuccessNotification = ({ show, onClose, title, message, impact }) => {
 
                 {/* Detailed Information */}
                 <AnimatePresence>
-                  {showDetails && (
+                  {showDetails && details && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10"
+                      className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10 text-left"
                     >
-                      <h4 className="text-white font-medium mb-3">📊 Detailed Analysis</h4>
-                      <div className="space-y-3 text-sm">
+                      <h4 className="text-white font-medium mb-3 text-center">📊 Detailed Analysis</h4>
+                      <div className="space-y-4 text-sm">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <span className="text-white/60">Execution Time:</span>
-                            <div className="text-white">{new Date().toLocaleString()}</div>
+                            <div className="flex items-center space-x-2 text-white/60"><Clock className="w-4 h-4" /><span>Execution Time:</span></div>
+                            <div className="text-white pl-6">{new Date().toLocaleString()}</div>
                           </div>
                           <div>
-                            <span className="text-white/60">Status:</span>
-                            <div className="text-green-400">✅ Completed Successfully</div>
+                            <div className="flex items-center space-x-2 text-white/60"><CheckCircle className="w-4 h-4" /><span>Status:</span></div>
+                            <div className="text-green-400 pl-6">✅ Completed Successfully</div>
                           </div>
                         </div>
                         
-                        <div>
-                          <span className="text-white/60">System Components Affected:</span>
-                          <div className="text-white">Mining Fleet, Energy Management, AI Inference</div>
-                        </div>
-                        
-                        <div>
-                          <span className="text-white/60">Performance Metrics:</span>
-                          <div className="text-white">
-                            • Fleet Utilization: 94.7% (+2.3% improvement)
-                            <br />
-                            • Power Efficiency: 98.1% (optimal range)
-                            <br />
-                            • Network Latency: 12ms (excellent)
+                        {details.system_components_affected && (
+                          <div>
+                            <div className="flex items-center space-x-2 text-white/60"><Cpu className="w-4 h-4" /><span>System Components Affected:</span></div>
+                            <div className="text-white pl-6">{details.system_components_affected.join(', ')}</div>
                           </div>
-                        </div>
+                        )}
                         
-                        <div>
-                          <span className="text-white/60">Next Recommended Actions:</span>
-                          <div className="text-white">
-                            • Monitor performance for 24 hours
-                            <br />
-                            • Review efficiency trends weekly
-                            <br />
-                            • Schedule maintenance in 30 days
+                        {details.performance_metrics && (
+                          <div>
+                            <div className="flex items-center space-x-2 text-white/60"><Activity className="w-4 h-4" /><span>Performance Metrics:</span></div>
+                            <ul className="text-white list-disc list-inside pl-6">
+                              {details.performance_metrics.map((metric, index) => (
+                                <li key={index}>
+                                  {metric.metric}: <span className="text-green-400">{metric.value}</span> {metric.comment}
+                                </li>
+                              ))}
+                            </ul>
                           </div>
-                        </div>
+                        )}
+                        
+                        {details.next_recommended_actions && (
+                          <div>
+                            <div className="flex items-center space-x-2 text-white/60"><Zap className="w-4 h-4" /><span>Next Recommended Actions:</span></div>
+                            <ul className="text-white list-disc list-inside pl-6">
+                              {details.next_recommended_actions.map((action, index) => (
+                                <li key={index}>{action}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   )}
@@ -198,11 +202,17 @@ const SuccessNotification = ({ show, onClose, title, message, impact }) => {
                   >
                     Continue
                   </button>
-                  <button 
-                    onClick={() => setShowDetails(!showDetails)}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-xl transition-all font-medium"
+                  <button
+                    onClick={() => details && setShowDetails(!showDetails)}
+                    disabled={!details}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-xl transition-all font-medium flex items-center justify-center disabled:from-gray-500 disabled:to-gray-600 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    {showDetails ? 'Hide Details' : 'View Details'}
+                    {!details ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <span>Executing...</span>
+                      </>
+                    ) : showDetails ? 'Hide Details' : 'View Details'}
                   </button>
                 </div>
               </motion.div>

@@ -201,6 +201,45 @@ const Configuration = () => {
     }
   };
 
+  const handleTestGlobalAnalysis = async () => {
+    setDebugResponse('Testing global context analysis...');
+    
+    try {
+      const globalContext = {
+        prices: globalDataContext.prices,
+        inventory: globalDataContext.inventory,
+        profitability: globalDataContext.profitability,
+        machines: globalDataContext.machines,
+        siteName: siteName,
+        power: power,
+        lastUpdated: globalDataContext.lastUpdated
+      };
+
+      const response = await fetch('http://localhost:3001/api/analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          globalContext,
+          apiKey
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(JSON.stringify(result, null, 2));
+      }
+
+      setDebugResponse(JSON.stringify(result.data, null, 2));
+      
+    } catch (error) {
+      console.error('Error testing global analysis:', error);
+      setDebugResponse(error.message);
+    }
+  };
+
   const handleShowGlobalContext = () => {
     console.log('Global Data Context:', globalDataContext);
     const dataOnlyContext = {
@@ -640,6 +679,16 @@ const Configuration = () => {
           >
             <Brain className="w-5 h-5" />
             <span>Test Analysis</span>
+          </motion.button>
+
+          <motion.button
+            onClick={handleTestGlobalAnalysis}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl transition-all backdrop-blur-sm shadow-lg"
+          >
+            <Brain className="w-5 h-5" />
+            <span>Test Global Analysis</span>
           </motion.button>
           
           {debugResponse && (

@@ -4,6 +4,7 @@ import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import React, { useState } from 'react';
 import { formatChartData, formatCurrency, getMetricColor, useData } from '../context/DataContext';
 
+import AnalysisPanel from './AnalysisPanel';
 import MachineAllocation from './MachineAllocation';
 import { useLiquidGlass } from './SimpleLiquidGlass';
 
@@ -358,6 +359,11 @@ const PremiumDashboard = () => {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+        </div>
+
+        {/* AI Analysis Panel */}
+        <div className="mb-12">
+          <AnalysisPanel />
         </div>
 
         {/* Asset Performance Grid */}

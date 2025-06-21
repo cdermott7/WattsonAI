@@ -114,6 +114,39 @@ export const createSite = async (siteName) => {
   }
 };
 
+export const analyzeGlobalContext = async (globalContext, apiKey) => {
+  if (!globalContext || !apiKey) {
+    console.error('Global context and API key are required for analysis');
+    return null;
+  }
+  
+  try {
+    const response = await fetch('http://localhost:3001/api/analysis', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        globalContext,
+        apiKey
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error in analysis:', errorData);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('Analysis completed successfully:', result);
+    return result.data;
+  } catch (error) {
+    console.error('Error analyzing global context:', error);
+    throw error;
+  }
+};
+
 export const calculateProfitability = (inventory, prices) => {
   if (!inventory || !prices || prices.length === 0) return null;
   

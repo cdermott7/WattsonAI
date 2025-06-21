@@ -1,26 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { fetchPrices, fetchInventory, calculateProfitability } from '../services/api';
-import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
-import { simulationScenarios, aiRecommendations } from '../services/enhancedMockData';
-import { useLiquidGlass } from './SimpleLiquidGlass';
-import SuccessNotification from './SuccessNotification';
-import { 
-  Play, 
-  Pause, 
-  TrendingDown, 
-  TrendingUp, 
-  Battery, 
-  Cpu, 
+import {
+  Activity,
+  AlertTriangle,
+  Battery,
   Brain,
-  AlertTriangle, 
-  CheckCircle, 
+  CheckCircle,
   Clock,
+  Cpu,
+  Loader2,
+  Pause,
+  Play,
   Target,
-  Activity
+  TrendingDown,
+  TrendingUp,
+  TrendingUp as TrendingUpIcon,
+  Zap
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { aiRecommendations, simulationScenarios } from '../services/enhancedMockData';
+import { calculateProfitability, fetchInventory, fetchPrices } from '../services/api';
+
+import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
+import SuccessNotification from './SuccessNotification';
+import axios from 'axios';
+import { motion } from 'framer-motion';
+import { useData } from '../context/DataContext';
+import { useLiquidGlass } from './SimpleLiquidGlass';
 
 const PremiumExecutionPage = () => {
+  const { 
+    analysis, 
+    isAnalyzing, 
+    analysisError, 
+    performAnalysis,
+    updateMachinesData,
+    apiKey,
+    machines
+  } = useData();
+  
   const [data, setData] = useState({ prices: [], inventory: null, profitability: null });
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +48,8 @@ const PremiumExecutionPage = () => {
     show: false,
     title: '',
     message: '',
-    impact: null
+    impact: null,
+    details: null
   });
   
   // Liquid glass refs for major sections
@@ -304,6 +321,83 @@ const PremiumExecutionPage = () => {
     }).format(value);
   };
 
+  // Analysis helper functions
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'green':
+        return 'from-green-500/20 to-emerald-500/20 border-green-500/30';
+      case 'yellow':
+        return 'from-yellow-500/20 to-amber-500/20 border-yellow-500/30';
+      case 'red':
+        return 'from-red-500/20 to-rose-500/20 border-red-500/30';
+      default:
+        return 'from-gray-500/20 to-gray-600/20 border-gray-500/30';
+    }
+  };
+
+  const getStatusBorderColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'green':
+        return 'border-green-500/50 shadow-green-500/20';
+      case 'yellow':
+        return 'border-yellow-500/50 shadow-yellow-500/20';
+      case 'red':
+        return 'border-red-500/50 shadow-red-500/20';
+      default:
+        return 'border-gray-500/50 shadow-gray-500/20';
+    }
+  };
+
+  const handleExecuteAnalysisAction = async (action) => {
+    if (action.type === 'api_call' && action.body) {
+      try {
+        // Show success notification immediately, without details
+        setSuccessNotification({
+          show: true,
+          title: 'Allocation Updated',
+          message: 'Machine allocation has been successfully updated based on AI analysis.',
+          impact: {
+            revenue: action.profit_impact,
+            efficiency: '+12.3%' // This can be part of a future enhancement
+          },
+          details: null // Details will be loaded in the background
+        });
+
+        // Update machines and fetch details in parallel
+        await updateMachinesData(action.body);
+        
+        // After successful execution, get the detailed analysis
+        const summaryResponse = await axios.post('http://localhost:3001/api/execution-summary', {
+          action,
+          globalContext: {
+            prices: data.prices,
+            inventory: data.inventory,
+            machines: machines,
+          },
+          apiKey: apiKey
+        });
+      
+        const detailedAnalysis = summaryResponse.data.data;
+
+        // Update the notification with the details
+        setSuccessNotification(prev => ({
+            ...prev,
+            details: detailedAnalysis
+        }));
+
+      } catch (error) {
+        console.error('Error executing analysis action:', error);
+        // Optionally, update the notification to show an error
+        setSuccessNotification(prev => ({
+            ...prev,
+            title: 'Update Failed',
+            message: 'There was an error updating the machine allocation.',
+            details: { error: 'Could not retrieve execution analysis.' }
+        }));
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center overflow-hidden">
@@ -397,8 +491,18 @@ const PremiumExecutionPage = () => {
         {/* Hero Header */}
         <div 
           ref={heroRef}
-          className="relative mb-16 rounded-3xl p-12 bg-gradient-to-r from-black/40 to-gray-900/40 backdrop-blur-xl border border-white/10"
+          className={`relative mb-16 rounded-3xl p-12 bg-gradient-to-r from-black/40 to-gray-900/40 backdrop-blur-xl border ${getStatusBorderColor(analysis?.status)}`}
         >
+          {/* Status LED Border */}
+          {analysis?.status && (
+            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
+              analysis.status.toLowerCase() === 'green' ? 'from-green-400 to-emerald-400' :
+              analysis.status.toLowerCase() === 'yellow' ? 'from-yellow-400 to-amber-400' :
+              analysis.status.toLowerCase() === 'red' ? 'from-red-400 to-rose-400' :
+              'from-gray-400 to-gray-500'
+            } rounded-t-3xl animate-pulse shadow-lg`}></div>
+          )}
+
           <div className="flex items-center justify-between">
             <div className="space-y-6">
               <div className="flex items-center space-x-4">
@@ -408,6 +512,24 @@ const PremiumExecutionPage = () => {
                 <div>
                   <h1 className="text-5xl font-extralight text-white tracking-tight">Execution Center</h1>
                   <p className="text-xl text-white/60 font-light">AI-Powered Strategic Operations</p>
+                  {analysis?.status && (
+                    <div className="flex items-center space-x-2 mt-2">
+                      <div className={`w-3 h-3 rounded-full ${
+                        analysis.status.toLowerCase() === 'green' ? 'bg-green-400' :
+                        analysis.status.toLowerCase() === 'yellow' ? 'bg-yellow-400' :
+                        analysis.status.toLowerCase() === 'red' ? 'bg-red-400' :
+                        'bg-gray-400'
+                      } animate-pulse`}></div>
+                      <span className={`text-sm font-medium ${
+                        analysis.status.toLowerCase() === 'green' ? 'text-green-400' :
+                        analysis.status.toLowerCase() === 'yellow' ? 'text-yellow-400' :
+                        analysis.status.toLowerCase() === 'red' ? 'text-red-400' :
+                        'text-gray-400'
+                      }`}>
+                        {analysis.status.toUpperCase()} STATUS
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -439,8 +561,28 @@ const PremiumExecutionPage = () => {
               </div>
             </div>
 
-            {/* Mode Toggle */}
+            {/* Analysis Control */}
             <div className="text-center space-y-4">
+              <motion.button
+                onClick={performAnalysis}
+                disabled={isAnalyzing}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all backdrop-blur-sm shadow-lg"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Analyzing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-4 h-4" />
+                    <span>Run Analysis</span>
+                  </>
+                )}
+              </motion.button>
+              
               <button
                 onClick={() => setSimulationMode(!simulationMode)}
                 className={`relative px-8 py-4 rounded-2xl transition-all duration-300 ${
@@ -466,6 +608,64 @@ const PremiumExecutionPage = () => {
           </div>
         </div>
 
+        {/* Analysis Summary */}
+        {analysis && !isAnalyzing && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`mb-12 p-8 rounded-3xl border bg-gradient-to-r ${getStatusColor(analysis.status)}`}
+          >
+            <div className="flex items-center space-x-3 mb-6">
+              <TrendingUp className="w-6 h-6 text-blue-400" />
+              <h3 className="text-2xl font-light text-white">Market Analysis Summary</h3>
+            </div>
+            <p className="text-white/80 leading-relaxed text-lg">
+              {analysis.summary || 'No analysis summary available'}
+            </p>
+          </motion.div>
+        )}
+
+        {/* Analysis Loading State */}
+        {isAnalyzing && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12 p-8 rounded-3xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-pink-500/10"
+          >
+            <div className="text-center py-8">
+              <div className="relative mb-6">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="w-16 h-16 border-4 border-transparent border-t-purple-500 border-r-pink-500 rounded-full mx-auto"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Brain className="w-6 h-6 text-purple-400" />
+                </div>
+              </div>
+              <h4 className="text-white font-medium mb-2">Wattson AI is analyzing...</h4>
+              <p className="text-white/60 text-sm">Processing market data and generating recommendations</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Analysis Error State */}
+        {analysisError && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12 p-8 bg-red-500/10 rounded-3xl border border-red-500/20"
+          >
+            <div className="flex items-center space-x-3">
+              <AlertTriangle className="w-6 h-6 text-red-400" />
+              <div>
+                <h4 className="text-red-400 font-medium">Analysis Error</h4>
+                <p className="text-red-400/80 text-sm">{analysisError}</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* AI Recommendations */}
         <div 
           ref={recommendationsRef}
@@ -488,9 +688,141 @@ const PremiumExecutionPage = () => {
           </div>
 
           <div className="p-8">
-            {recommendations.length > 0 ? (
-              <div className="space-y-8">
-                {recommendations.map((rec, index) => (
+            {/* Analysis Actions */}
+            {analysis?.actions && analysis.actions.length > 0 && (
+              <div className="mb-12">
+                <div className="flex items-center space-x-3 mb-6">
+                  <Zap className="w-6 h-6 text-orange-400" />
+                  <h3 className="text-xl font-medium text-white">AI-Generated Allocation Updates</h3>
+                </div>
+                
+                {analysis.actions.map((action, index) => (
+                  <motion.div
+                    key={`analysis-${index}`}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="group relative mb-6"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    
+                    <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+                      {/* Header Section */}
+                      <div className="p-6 border-b border-white/5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className="p-3 rounded-xl bg-gradient-to-r from-orange-500/20 to-red-500/20">
+                              <Cpu className="w-6 h-6 text-orange-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-medium text-white mb-1">Update Machine Allocation</h3>
+                              <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                AI RECOMMENDED
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Execute Button */}
+                          <button
+                            onClick={() => handleExecuteAnalysisAction(action)}
+                            className="flex items-center px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white text-sm rounded-xl transition-all backdrop-blur-sm shadow-lg"
+                          >
+                            <Play className="w-4 h-4 mr-2" />
+                            Execute Update
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Content Section */}
+                      <div className="p-6 space-y-6">
+                        <p className="text-white/80 text-base leading-relaxed">
+                          {action.description || 'AI-recommended machine allocation optimization'}
+                        </p>
+                        
+                        {/* Enhanced Metrics Grid */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="text-white/60 text-xs mb-1">Confidence</div>
+                            <div className="font-mono text-lg text-green-400">
+                              {action.confidence || '94.2%'}
+                            </div>
+                          </div>
+                          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="text-white/60 text-xs mb-1">Timeframe</div>
+                            <div className="text-white text-lg font-medium">
+                              {action.timeframe || '4 hours'}
+                            </div>
+                          </div>
+                          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="text-white/60 text-xs mb-1">Profit Impact</div>
+                            <div className="text-green-400 font-medium text-lg">
+                              {action.profit_impact || '+$3,247/hour'}
+                            </div>
+                          </div>
+                          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="text-white/60 text-xs mb-1">Carbon Impact</div>
+                            <div className="text-emerald-400 font-medium text-lg">
+                              {action.carbon_impact || '-1.2 tCO2e'}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Allocation Changes */}
+                        {action.body && machines && (
+                          <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+                            <h6 className="text-white/80 text-sm font-medium mb-3">Allocation Changes:</h6>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                              {Object.entries(action.body).map(([key, value]) => {
+                                if (machines.hasOwnProperty(key)) {
+                                  const currentValue = machines[key] ?? 0;
+                                  const newValue = parseInt(value, 10);
+                                  const diff = newValue - currentValue;
+
+                                  return (
+                                    <div key={key} className="flex justify-between items-center p-2 bg-white/5 rounded-lg">
+                                      <span className="text-white/60 capitalize">{key.replace(/_/g, ' ')}:</span>
+                                      <span className="text-white font-medium flex items-center">
+                                        {newValue}
+                                        {diff !== 0 && (
+                                          <span className={`ml-2 text-xs font-mono ${diff > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            ({diff > 0 ? `+${diff}` : diff})
+                                          </span>
+                                        )}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Wattson AI Insight */}
+                        <div className="p-4 bg-gradient-to-r from-orange-500/10 to-amber-500/10 rounded-xl border border-orange-500/20">
+                          <div className="flex items-start space-x-3">
+                            <div className="p-2 bg-orange-500/20 rounded-lg flex-shrink-0">
+                              <Brain className="w-4 h-4 text-orange-400" />
+                            </div>
+                            <div>
+                              <div className="text-orange-300 text-xs font-medium mb-1">WATTSON AI INSIGHT</div>
+                              <p className="text-orange-200 text-sm italic">
+                                "{action.wattson_insight || 'Fascinating development: Market microstructure analysis reveals asymmetric profit potential in this temporal window.'}"
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* Original Recommendations */}
+            <div className="space-y-8">
+              {recommendations.length > 0 ? (
+                recommendations.map((rec, index) => (
                   <div key={index} className="group relative">
                     <div className={`absolute inset-0 bg-gradient-to-r ${getPriorityGradient(rec.priority)} rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity`}></div>
                     
@@ -630,15 +962,15 @@ const PremiumExecutionPage = () => {
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <AlertTriangle className="w-16 h-16 text-white/30 mx-auto mb-6" />
-                <h3 className="text-xl font-medium text-white mb-3">No Active Recommendations</h3>
-                <p className="text-white/60 font-light">All systems operating within optimal parameters. Wattson is monitoring for opportunities.</p>
-              </div>
-            )}
+                ))
+              ) : (
+                <div className="text-center py-16">
+                  <AlertTriangle className="w-16 h-16 text-white/30 mx-auto mb-6" />
+                  <h3 className="text-xl font-medium text-white mb-3">No Active Recommendations</h3>
+                  <p className="text-white/60 font-light">All systems operating within optimal parameters. Wattson is monitoring for opportunities.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -707,6 +1039,7 @@ const PremiumExecutionPage = () => {
         title={successNotification.title}
         message={successNotification.message}
         impact={successNotification.impact}
+        details={successNotification.details}
         onClose={() => setSuccessNotification(prev => ({ ...prev, show: false }))}
       />
     </div>

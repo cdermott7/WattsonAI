@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import {
+  analyzeGlobalContext,
   calculateProfitability,
   fetchInventory,
   fetchMachines,
@@ -20,7 +21,11 @@ const initialState = {
   // Site configuration
   siteName: 'MaraHackathon',
   apiKey: '947a8153-edf4-4093-aa92-e6efe0bd2682',
-  power: 1000000
+  power: 1000000,
+  // Analysis state
+  analysis: null,
+  isAnalyzing: false,
+  analysisError: null
 };
 
 // Action types
@@ -31,7 +36,10 @@ const ACTIONS = {
   SET_DATA: 'SET_DATA',
   UPDATE_MACHINES: 'UPDATE_MACHINES',
   REFRESH_DATA: 'REFRESH_DATA',
-  UPDATE_SITE_CONFIG: 'UPDATE_SITE_CONFIG'
+  UPDATE_SITE_CONFIG: 'UPDATE_SITE_CONFIG',
+  SET_ANALYZING: 'SET_ANALYZING',
+  SET_ANALYSIS: 'SET_ANALYSIS',
+  SET_ANALYSIS_ERROR: 'SET_ANALYSIS_ERROR'
 };
 
 // Reducer function
@@ -73,6 +81,24 @@ const dataReducer = (state, action) => {
       return {
         ...state,
         ...action.payload
+      };
+    
+    case ACTIONS.SET_ANALYZING:
+      return { ...state, isAnalyzing: action.payload };
+    
+    case ACTIONS.SET_ANALYSIS:
+      return { 
+        ...state, 
+        analysis: action.payload, 
+        isAnalyzing: false, 
+        analysisError: null 
+      };
+    
+    case ACTIONS.SET_ANALYSIS_ERROR:
+      return { 
+        ...state, 
+        analysisError: action.payload, 
+        isAnalyzing: false 
       };
     
     default:
@@ -161,6 +187,40 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+  // Perform AI analysis function
+  const performAnalysis = async () => {
+    try {
+      dispatch({ type: ACTIONS.SET_ANALYZING, payload: true });
+      
+      // Prepare global context for analysis
+      const globalContext = {
+        prices: state.prices,
+        inventory: state.inventory,
+        profitability: state.profitability,
+        machines: state.machines,
+        siteName: state.siteName,
+        power: state.power,
+        lastUpdated: state.lastUpdated
+      };
+      
+      const analysisResult = await analyzeGlobalContext(globalContext, state.apiKey);
+      
+      dispatch({ 
+        type: ACTIONS.SET_ANALYSIS, 
+        payload: analysisResult 
+      });
+      
+      return analysisResult;
+    } catch (error) {
+      console.error('Error performing analysis:', error);
+      dispatch({ 
+        type: ACTIONS.SET_ANALYSIS_ERROR, 
+        payload: error.message 
+      });
+      throw error;
+    }
+  };
+
   // Auto-refresh data every 30 seconds
   useEffect(() => {
     loadData();
@@ -176,6 +236,7 @@ export const DataProvider = ({ children }) => {
     updateMachinesData,
     refreshData,
     updateSiteConfig,
+    performAnalysis,
     dispatch
   };
 
