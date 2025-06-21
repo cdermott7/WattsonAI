@@ -47,6 +47,7 @@ const DataStatusIndicator = () => {
                          (machines.gpu_compute || 0) + 
                          (machines.asic_compute || 0);
     
+    return `${prices.length} prices • ${totalMachines} machines`;
   };
 
   return (
