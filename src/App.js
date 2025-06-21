@@ -6,6 +6,7 @@ import PremiumExecutionPage from './components/PremiumExecutionPage';
 import CommandCenter from './components/CommandCenter';
 import Configuration from './components/Configuration';
 import PremiumChatWidget from './components/PremiumChatWidget';
+import ApiTest from './components/ApiTest';
 import { Home, BarChart3, Play, Brain, Activity, Command, Settings } from 'lucide-react';
 import './App.css';
 
@@ -88,6 +89,18 @@ function App() {
                   <span>Settings</span>
                 </a>
                 
+                <a
+                  href="/api-test"
+                  className="flex items-center space-x-3 px-6 py-3 rounded-2xl text-sm font-medium transition-all duration-300 text-white/70 hover:text-white hover:bg-white/10"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/api-test';
+                  }}
+                >
+                  <Activity className="w-4 h-4" />
+                  <span>API Test</span>
+                </a>
+                
                 {/* Status Indicator */}
                 <div className="ml-4 flex items-center space-x-2 px-4 py-2 bg-white/10 rounded-xl backdrop-blur-sm">
                   <Activity className="w-4 h-4 text-green-400" />
@@ -106,6 +119,7 @@ function App() {
             <Route path="/execution" element={<PremiumExecutionPage />} />
             <Route path="/command" element={<CommandCenter />} />
             <Route path="/config" element={<Configuration />} />
+            <Route path="/api-test" element={<ApiTest />} />
           </Routes>
         </main>
 
