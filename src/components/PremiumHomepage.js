@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { fetchPrices, fetchInventory, calculateProfitability } from '../services/api';
-import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
-import { liveEvents, performanceMetrics, aiModules } from '../services/enhancedMockData';
-import { useLiquidGlass } from './SimpleLiquidGlass';
+import { Activity, AlertCircle, Brain, TrendingDown, TrendingUp, Zap } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { aiModules, liveEvents, performanceMetrics } from '../services/enhancedMockData';
+import { formatCurrency, useData } from '../context/DataContext';
+
 import AnimatedNumber from './AnimatedNumber';
+import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
 import MarkdownRenderer from './MarkdownRenderer';
-import { TrendingUp, TrendingDown, Zap, Activity, Brain, AlertCircle } from 'lucide-react';
+import { useLiquidGlass } from './SimpleLiquidGlass';
 
 const PremiumHomepage = () => {
-  const [data, setData] = useState({ prices: [], inventory: null, profitability: null });
+  const { prices, inventory, profitability, loading, error } = useData();
   const [aiStatus, setAiStatus] = useState({ status: 'green', message: '', confidence: 0 });
-  const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   
   // Liquid glass refs for each major component
@@ -22,40 +22,21 @@ const PremiumHomepage = () => {
   useEffect(() => {
     const wattson = new EnhancedWattsonAI();
     
-    const loadData = async () => {
-      try {
-        const [prices, inventory] = await Promise.all([
-          fetchPrices(),
-          fetchInventory()
-        ]);
-        
-        const profitability = calculateProfitability(inventory, prices);
-        const status = wattson.analyzeMarketConditions();
-        
-        setData({ prices, inventory, profitability });
-        setAiStatus(status);
-        
-        // Use live events as notifications
-        setNotifications(liveEvents.slice(0, 3).map(event => ({
-          id: event.id,
-          type: event.severity,
-          title: event.title,
-          message: event.message,
-          timestamp: event.timestamp,
-          confidence: event.confidence
-        })));
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setLoading(false);
-      }
-    };
-
-    loadData();
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    if (prices.length > 0 && inventory) {
+      const status = wattson.analyzeMarketConditions();
+      setAiStatus(status);
+      
+      // Use live events as notifications
+      setNotifications(liveEvents.slice(0, 3).map(event => ({
+        id: event.id,
+        type: event.severity,
+        title: event.title,
+        message: event.message,
+        timestamp: event.timestamp,
+        confidence: event.confidence
+      })));
+    }
+  }, [prices, inventory]);
 
   const generateNotifications = (prices, profitability) => {
     const notifications = [];
@@ -103,15 +84,6 @@ const PremiumHomepage = () => {
       case 'red': return 'from-red-500 to-rose-600';
       default: return 'from-gray-500 to-gray-600';
     }
-  };
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: value < 1 ? 4 : 2,
-      maximumFractionDigits: value < 1 ? 4 : 2
-    }).format(value);
   };
 
   if (loading) {
@@ -325,7 +297,7 @@ const PremiumHomepage = () => {
               </div>
               <div className="space-y-2">
                 <AnimatedNumber 
-                  value={data.prices[0]?.energy_price || 0}
+                  value={prices[0]?.energy_price || 0}
                   prefix="$"
                   suffix="/kWh"
                   decimals={4}
@@ -333,17 +305,17 @@ const PremiumHomepage = () => {
                   color="text-white"
                 />
                 <p className="text-white/60">Energy Price</p>
-                {data.prices.length >= 2 && (
+                {prices.length >= 2 && (
                   <div className="flex items-center space-x-2">
-                    {data.prices[0].energy_price > data.prices[1].energy_price ? (
+                    {prices[0].energy_price > prices[1].energy_price ? (
                       <TrendingUp className="w-4 h-4 text-red-400" />
                     ) : (
                       <TrendingDown className="w-4 h-4 text-green-400" />
                     )}
                     <span className={`text-sm ${
-                      data.prices[0].energy_price > data.prices[1].energy_price ? 'text-red-400' : 'text-green-400'
+                      prices[0].energy_price > prices[1].energy_price ? 'text-red-400' : 'text-green-400'
                     }`}>
-                      {Math.abs(((data.prices[0].energy_price - data.prices[1].energy_price) / data.prices[1].energy_price) * 100).toFixed(2)}%
+                      {Math.abs(((prices[0].energy_price - prices[1].energy_price) / prices[1].energy_price) * 100).toFixed(2)}%
                     </span>
                   </div>
                 )}
@@ -361,7 +333,7 @@ const PremiumHomepage = () => {
               </div>
               <div className="space-y-2">
                 <AnimatedNumber 
-                  value={data.prices[0]?.hash_price || 0}
+                  value={prices[0]?.hash_price || 0}
                   prefix="$"
                   suffix="/TH"
                   decimals={2}
@@ -369,17 +341,17 @@ const PremiumHomepage = () => {
                   color="text-white"
                 />
                 <p className="text-white/60">Hash Price</p>
-                {data.prices.length >= 2 && (
+                {prices.length >= 2 && (
                   <div className="flex items-center space-x-2">
-                    {data.prices[0].hash_price > data.prices[1].hash_price ? (
+                    {prices[0].hash_price > prices[1].hash_price ? (
                       <TrendingUp className="w-4 h-4 text-green-400" />
                     ) : (
                       <TrendingDown className="w-4 h-4 text-red-400" />
                     )}
                     <span className={`text-sm ${
-                      data.prices[0].hash_price > data.prices[1].hash_price ? 'text-green-400' : 'text-red-400'
+                      prices[0].hash_price > prices[1].hash_price ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {Math.abs(((data.prices[0].hash_price - data.prices[1].hash_price) / data.prices[1].hash_price) * 100).toFixed(2)}%
+                      {Math.abs(((prices[0].hash_price - prices[1].hash_price) / prices[1].hash_price) * 100).toFixed(2)}%
                     </span>
                   </div>
                 )}
@@ -397,24 +369,24 @@ const PremiumHomepage = () => {
               </div>
               <div className="space-y-2">
                 <AnimatedNumber 
-                  value={data.prices[0]?.token_price || 0}
+                  value={prices[0]?.token_price || 0}
                   prefix="$"
                   decimals={3}
                   fontSize="text-3xl"
                   color="text-white"
                 />
                 <p className="text-white/60">Token Price</p>
-                {data.prices.length >= 2 && (
+                {prices.length >= 2 && (
                   <div className="flex items-center space-x-2">
-                    {data.prices[0].token_price > data.prices[1].token_price ? (
+                    {prices[0].token_price > prices[1].token_price ? (
                       <TrendingUp className="w-4 h-4 text-green-400" />
                     ) : (
                       <TrendingDown className="w-4 h-4 text-red-400" />
                     )}
                     <span className={`text-sm ${
-                      data.prices[0].token_price > data.prices[1].token_price ? 'text-green-400' : 'text-red-400'
+                      prices[0].token_price > prices[1].token_price ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {Math.abs(((data.prices[0].token_price - data.prices[1].token_price) / data.prices[1].token_price) * 100).toFixed(2)}%
+                      {Math.abs(((prices[0].token_price - prices[1].token_price) / prices[1].token_price) * 100).toFixed(2)}%
                     </span>
                   </div>
                 )}

@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 
 import { Server } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { updateMachines } from '../services/api';
+import { useData } from '../context/DataContext';
 
-const MachineAllocation = ({ apiKey, initialAllocation, onAllocationChange }) => {
+const MachineAllocation = ({ apiKey, initialAllocation }) => {
+  const { updateMachinesData, isUpdating } = useData();
   const [allocation, setAllocation] = useState(initialAllocation);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -19,18 +19,12 @@ const MachineAllocation = ({ apiKey, initialAllocation, onAllocationChange }) =>
   };
 
   const handleUpdate = async () => {
-    setIsUpdating(true);
     setError(null);
     try {
-      const updatedData = await updateMachines(apiKey, allocation);
-      if (onAllocationChange) {
-        onAllocationChange(updatedData);
-      }
+      await updateMachinesData(allocation);
     } catch (err) {
       console.error('Failed to update machine allocation', err);
       setError('Failed to update allocation. Please try again.');
-    } finally {
-      setIsUpdating(false);
     }
   };
 
