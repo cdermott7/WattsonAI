@@ -195,6 +195,50 @@ app.put('/api/machines', async (req, res) => {
   }
 });
 
+app.post('/api/test-analysis', async (req, res) => {
+    // WARNING: Hardcoding API keys is insecure. In production, use environment variables.
+    const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
+    try {
+        console.log('Proxying request to Anthropic API...');
+        const response = await axios.post('https://api.anthropic.com/v1/messages', {
+            model: "claude-3-opus-20240229",
+            max_tokens: 1024,
+            messages: [
+                { role: "user", content: "Hello, world" }
+            ]
+        }, {
+            headers: {
+                'x-api-key': ANTHROPIC_API_KEY,
+                'anthropic-version': '2023-06-01',
+                'content-type': 'application/json'
+            }
+        });
+
+        console.log('Anthropic API Response received:');
+        console.log('Status:', response.status);
+        res.json({
+            success: true,
+            data: response.data,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('Error proxying to Anthropic API:', error.message);
+        if (error.response) {
+            console.error('Error response data:', error.response.data);
+            return res.status(error.response.status).json({
+                success: false,
+                error: error.response.data
+            });
+        }
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // Chat endpoint integrating with Claude AI
 app.post('/api/chat', async (req, res) => {
   try {

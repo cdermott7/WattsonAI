@@ -177,6 +177,28 @@ const Configuration = () => {
     }
   };
 
+  const handleTestAnalysis = async () => {
+    setDebugResponse('Testing analysis via backend proxy...');
+    
+    try {
+      const response = await fetch('http://localhost:3001/api/test-analysis', {
+        method: 'POST',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(JSON.stringify(result, null, 2));
+      }
+
+      setDebugResponse(JSON.stringify(result.data, null, 2));
+      
+    } catch (error) {
+      console.error('Error testing analysis:', error);
+      setDebugResponse(error.message);
+    }
+  };
+
   const handleShowGlobalContext = () => {
     console.log('Global Data Context:', globalDataContext);
     const dataOnlyContext = {
@@ -602,6 +624,16 @@ const Configuration = () => {
           >
             <Database className="w-5 h-5" />
             <span>Show Global Context</span>
+          </motion.button>
+
+          <motion.button
+            onClick={handleTestAnalysis}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl transition-all backdrop-blur-sm shadow-lg"
+          >
+            <Brain className="w-5 h-5" />
+            <span>Test Analysis</span>
           </motion.button>
           
           {debugResponse && (

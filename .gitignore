@@ -83,3 +83,7 @@ jspm_packages/
 
 # DynamoDB Local files
 .dynamodb/
+
+# dotenv environment variables file
+.env
+backend/.env
