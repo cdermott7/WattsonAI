@@ -2,48 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLiquidGlass } from './SimpleLiquidGlass';
 import { useData } from '../context/DataContext';
-import { liveEvents } from '../services/enhancedMockData';
+import { liveEvents, fleetData, marketData, performanceMetrics } from '../services/enhancedMockData';
 import AnimatedNumber from './AnimatedNumber';
 import SuccessNotification from './SuccessNotification';
 import MarkdownRenderer from './MarkdownRenderer';
 import { emailService } from '../utils/emailNotifications';
 import { browserNotificationService } from '../utils/browserNotifications';
-import { 
-  Brain, 
-  Activity, 
-  Zap, 
-  Cpu, 
-  Battery, 
-  TrendingUp, 
-  TrendingDown, 
-  AlertTriangle,
-  BarChart3,
-  Battery,
-  Bell,
-  Brain,
-  CheckCircle,
-  Cpu,
-  Gauge,
-  Mic,
-  MicOff,
-  Send,
-  Settings,
-  Target,
-  TrendingDown,
-  TrendingUp,
-  Zap
-} from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
-import React, { useEffect, useState } from 'react';
-import { fleetData, liveEvents, marketData, performanceMetrics } from '../services/enhancedMockData';
-
-import AnimatedNumber from './AnimatedNumber';
 import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
-import MarkdownRenderer from './MarkdownRenderer';
-import SuccessNotification from './SuccessNotification';
-import { browserNotificationService } from '../utils/browserNotifications';
-import { emailService } from '../utils/emailNotifications';
-import { useLiquidGlass } from './SimpleLiquidGlass';
+import {
+  Brain, Activity, Zap, Cpu, Battery, TrendingUp, TrendingDown, AlertTriangle,
+  BarChart3, Gauge, CheckCircle, Settings, Send, Mic, MicOff, Bell, Target
+} from 'lucide-react';
 
 const CommandCenter = () => {
   const [messages, setMessages] = useState([

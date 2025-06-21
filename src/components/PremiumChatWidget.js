@@ -11,7 +11,7 @@ const PremiumChatWidget = () => {
     {
       id: 1,
       type: 'ai',
-      content: "Elementary, my dear colleague! I'm Wattson, your strategic operations intelligence. How may I assist with optimizing your mining operations?",
+      content: "Hello! I'm Wattson AI, your strategic operations assistant. How can I help you optimize your operations today?",
       timestamp: new Date(),
       confidence: 95
     }

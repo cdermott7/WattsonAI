@@ -8,7 +8,7 @@ const ChatWidget = () => {
     {
       id: 1,
       type: 'ai',
-      content: "Elementary, my dear colleague! I'm Wattson, your AI operations assistant. How may I assist with your mining operations today?",
+      content: "Hello! I'm Wattson, your AI operations assistant. How can I help you today?",
       timestamp: new Date()
     }
   ]);
