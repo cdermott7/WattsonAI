@@ -710,20 +710,26 @@ const PremiumExecutionPage = () => {
                           <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                             <div className="text-white/60 text-xs mb-1">Confidence</div>
                             <div className="font-mono text-lg text-green-400">
-                              94.2%
+                              {action.confidence || '94.2%'}
                             </div>
                           </div>
                           <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                             <div className="text-white/60 text-xs mb-1">Timeframe</div>
-                            <div className="text-white text-lg font-medium">4 hours</div>
+                            <div className="text-white text-lg font-medium">
+                              {action.timeframe || '4 hours'}
+                            </div>
                           </div>
                           <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                             <div className="text-white/60 text-xs mb-1">Profit Impact</div>
-                            <div className="text-green-400 font-medium text-lg">+$3,247/hour</div>
+                            <div className="text-green-400 font-medium text-lg">
+                              {action.profit_impact || '+$3,247/hour'}
+                            </div>
                           </div>
                           <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                             <div className="text-white/60 text-xs mb-1">Carbon Impact</div>
-                            <div className="text-emerald-400 font-medium text-lg">-1.2 tCO2e</div>
+                            <div className="text-emerald-400 font-medium text-lg">
+                              {action.carbon_impact || '-1.2 tCO2e'}
+                            </div>
                           </div>
                         </div>
                         
@@ -750,7 +756,9 @@ const PremiumExecutionPage = () => {
                             </div>
                             <div>
                               <div className="text-orange-300 text-xs font-medium mb-1">WATTSON AI INSIGHT</div>
-                              <p className="text-orange-200 text-sm italic">"Fascinating development: Market microstructure analysis reveals asymmetric profit potential in this temporal window."</p>
+                              <p className="text-orange-200 text-sm italic">
+                                "{action.wattson_insight || 'Fascinating development: Market microstructure analysis reveals asymmetric profit potential in this temporal window.'}"
+                              </p>
                             </div>
                           </div>
                         </div>

@@ -312,7 +312,14 @@ app.post('/api/analysis', async (req, res) => {
 
 2. **Summary**: A concise summary of the current pricing trends (energy, hash, token) and available inventory (miners, inference machines), highlighting any significant changes or imbalances. Focus on the most recent price data provided.
 
-3. **Actions**: A list of actionable recommendations based on the pricing and inventory information. These actions should aim to optimize revenue, minimize costs, and efficiently utilize available resources. Consider strategies like:
+3. **Actions**: A list of actionable recommendations based on the pricing and inventory information. Each action should include:
+   * **Confidence**: A percentage (85-98%) indicating AI confidence in the recommendation
+   * **Timeframe**: Estimated time for the action to take effect (1-8 hours)
+   * **Profit Impact**: Estimated hourly profit increase/decrease in USD
+   * **Carbon Impact**: Estimated change in carbon emissions (tCO2e)
+   * **Wattson AI Insight**: A brief, insightful comment about the market conditions or strategy
+
+These actions should aim to optimize revenue, minimize costs, and efficiently utilize available resources. Consider strategies like:
    * Adjusting allocations of different miner types (air, hydro, immersion).
    * Adjusting allocations of different inference types (ASIC, GPU).
    * Prioritizing operations based on profitability.
@@ -343,12 +350,17 @@ Output Format:
         "air_miners": "[[OPTIMAL_AIR_MINERS]]",
         "hydro_miners": "[[OPTIMAL_HYDRO_MINERS]]"
       },
-      "description": "[[rationale]]"
+      "description": "[[rationale]]",
+      "confidence": "[[85-98]]%",
+      "timeframe": "[[1-8]] hours",
+      "profit_impact": "+$[[AMOUNT]]/hour",
+      "carbon_impact": "[[+/-]] [[AMOUNT]] tCO2e",
+      "wattson_insight": "[[INSIGHTFUL_COMMENT_ABOUT_MARKET_OR_STRATEGY]]"
     }
   ]
 }
 
-Please provide a valid JSON response with the exact format specified above.`;
+Please provide a valid JSON response with the exact format specified above. Calculate realistic values based on the data provided.`;
 
     // Call Anthropic API for analysis
     const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;

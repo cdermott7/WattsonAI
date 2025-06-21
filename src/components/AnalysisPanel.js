@@ -211,6 +211,59 @@ const AnalysisPanel = () => {
                     )}
                   </div>
                   
+                  {/* AI Metrics */}
+                  {(action.confidence || action.timeframe || action.profit_impact || action.carbon_impact) && (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+                      {action.confidence && (
+                        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                          <div className="text-white/60 text-xs mb-1">Confidence</div>
+                          <div className="font-mono text-sm text-green-400">
+                            {action.confidence}
+                          </div>
+                        </div>
+                      )}
+                      {action.timeframe && (
+                        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                          <div className="text-white/60 text-xs mb-1">Timeframe</div>
+                          <div className="text-white text-sm font-medium">
+                            {action.timeframe}
+                          </div>
+                        </div>
+                      )}
+                      {action.profit_impact && (
+                        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                          <div className="text-white/60 text-xs mb-1">Profit Impact</div>
+                          <div className="text-green-400 font-medium text-sm">
+                            {action.profit_impact}
+                          </div>
+                        </div>
+                      )}
+                      {action.carbon_impact && (
+                        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                          <div className="text-white/60 text-xs mb-1">Carbon Impact</div>
+                          <div className="text-emerald-400 font-medium text-sm">
+                            {action.carbon_impact}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Wattson AI Insight */}
+                  {action.wattson_insight && (
+                    <div className="p-3 bg-gradient-to-r from-orange-500/10 to-amber-500/10 rounded-lg border border-orange-500/20 mb-3">
+                      <div className="flex items-start space-x-2">
+                        <div className="p-1 bg-orange-500/20 rounded flex-shrink-0">
+                          <Brain className="w-3 h-3 text-orange-400" />
+                        </div>
+                        <div>
+                          <div className="text-orange-300 text-xs font-medium mb-1">WATTSON AI INSIGHT</div>
+                          <p className="text-orange-200 text-xs italic">"{action.wattson_insight}"</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {action.body && (
                     <div className="bg-black/20 rounded-lg p-3">
                       <h6 className="text-white/80 text-sm font-medium mb-2">Allocation Changes:</h6>
