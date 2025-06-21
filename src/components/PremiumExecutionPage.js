@@ -469,147 +469,158 @@ const PremiumExecutionPage = () => {
         {/* AI Recommendations */}
         <div 
           ref={recommendationsRef}
-          className="mb-12 bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10"
+          className="mb-12 bg-black/40 backdrop-blur-xl rounded-3xl border border-white/10"
         >
-          <div className="flex items-center space-x-4 mb-8">
-            <Brain className="w-8 h-8 text-orange-400" />
-            <h2 className="text-3xl font-light text-white">Wattson's Strategic Recommendations</h2>
+          <div className="p-8 border-b border-white/10">
+            <div className="flex items-center space-x-4">
+              <Brain className="w-8 h-8 text-orange-400" />
+              <h2 className="text-3xl font-light text-white">Strategic Recommendations</h2>
+            </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="p-8">
             {recommendations.length > 0 ? (
-              recommendations.map((rec, index) => (
-                <div key={index} className="group relative">
-                  <div className={`absolute inset-0 bg-gradient-to-r ${getPriorityGradient(rec.priority)} rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity`}></div>
-                  
-                  <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-6 flex-1">
-                        <div className="p-3 rounded-xl bg-white/10">
-                          {getActionIcon(rec)}
+              <div className="space-y-8">
+                {recommendations.map((rec, index) => (
+                  <div key={index} className="group relative">
+                    <div className={`absolute inset-0 bg-gradient-to-r ${getPriorityGradient(rec.priority)} rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity`}></div>
+                    
+                    <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+                      {/* Header Section */}
+                      <div className="p-6 border-b border-white/5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className="p-3 rounded-xl bg-white/10">
+                              {getActionIcon(rec)}
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-medium text-white mb-1">{rec.title}</h3>
+                              <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${
+                                rec.impact === 'high' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                rec.impact === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                                'bg-green-500/20 text-green-400 border-green-500/30'
+                              }`}>
+                                {rec.impact ? rec.impact.toUpperCase() : 'MEDIUM'} IMPACT
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={() => handleSimulateAction(`sim-${index}`, rec)}
+                              disabled={executingActions.has(`sim-${index}`) || executingActions.has(`exec-${index}`)}
+                              className="flex items-center px-4 py-2 bg-blue-600/80 hover:bg-blue-600 text-white text-sm rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {executingActions.has(`sim-${index}`) ? (
+                                <>
+                                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                                  Simulating
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-4 h-4 mr-2" />
+                                  Simulate
+                                </>
+                              )}
+                            </button>
+                            
+                            <button
+                              onClick={() => handleExecuteAction(`exec-${index}`, rec)}
+                              disabled={executingActions.has(`exec-${index}`) || executingActions.has(`sim-${index}`) || simulationMode}
+                              className="flex items-center px-4 py-2 bg-orange-600/80 hover:bg-orange-600 text-white text-sm rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {executingActions.has(`exec-${index}`) ? (
+                                <>
+                                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                                  Executing
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Execute
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Content Section */}
+                      <div className="p-6">
+                        <p className="text-white/80 text-base leading-relaxed mb-6">{rec.description}</p>
+                        
+                        {/* Metrics Grid */}
+                        <div className="grid grid-cols-2 gap-6 mb-6">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-white/60 text-sm">Confidence</span>
+                              <span className={`font-mono text-sm ${getConfidenceColor(rec.confidence)}`}>
+                                {rec.confidence}%
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-white/60 text-sm">Timeframe</span>
+                              <span className="text-white text-sm">{rec.timeframe}</span>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-white/60 text-sm">Profit Impact</span>
+                              <span className="text-green-400 font-medium text-sm">{rec.profit_impact}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-white/60 text-sm">Carbon Impact</span>
+                              <span className="text-emerald-400 font-medium text-sm">{rec.carbon_impact}</span>
+                            </div>
+                          </div>
                         </div>
                         
-                        <div className="flex-1 space-y-4">
-                          <div className="flex items-center space-x-3">
-                            <h3 className="text-xl font-medium text-white">{rec.title}</h3>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                              rec.impact === 'high' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                              rec.impact === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                              'bg-green-500/20 text-green-400 border-green-500/30'
-                            }`}>
-                              {rec.impact ? rec.impact.toUpperCase() : 'MEDIUM'} IMPACT
-                            </span>
+                        {/* Sherlock Insight */}
+                        {rec.sherlock_insight && (
+                          <div className="p-4 bg-orange-500/10 rounded-xl border border-orange-500/20 mb-6">
+                            <p className="text-orange-200 text-sm italic">"{rec.sherlock_insight}"</p>
                           </div>
-                          
-                          <p className="text-white/80 text-lg leading-relaxed">{rec.description}</p>
-                          
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-white/60">Confidence:</span>
-                                <span className={`font-mono ${getConfidenceColor(rec.confidence)}`}>
-                                  {rec.confidence}%
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-white/60">Timeframe:</span>
-                                <span className="text-white">{rec.timeframe}</span>
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-white/60">Profit Impact:</span>
-                                <span className="text-green-400 font-medium">{rec.profit_impact}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-white/60">Carbon Impact:</span>
-                                <span className="text-emerald-400 font-medium">{rec.carbon_impact}</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {rec.sherlock_insight && (
-                            <div className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                              <p className="text-orange-200 text-sm italic">"{rec.sherlock_insight}"</p>
-                            </div>
-                          )}
+                        )}
 
-                          {/* Progress Details */}
-                          {(executingActions.has(`sim-${index}`) || executingActions.has(`exec-${index}`)) && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              className="p-4 bg-white/5 rounded-lg border border-white/10"
-                            >
-                              <div className="flex items-center space-x-3 mb-3">
+                        {/* Progress Section */}
+                        {(executingActions.has(`sim-${index}`) || executingActions.has(`exec-${index}`)) && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="bg-white/5 rounded-xl p-4 border border-white/10"
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-3">
                                 <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
                                 <span className="text-white text-sm font-medium">
                                   {executingActions.has(`sim-${index}`) ? 'Running Simulation' : 'Executing Action'}
                                 </span>
-                                <span className="text-orange-400 text-sm font-mono">
-                                  {actionProgress[`sim-${index}`] || actionProgress[`exec-${index}`] || 0}%
-                                </span>
                               </div>
-                              
-                              <div className="w-full bg-white/20 rounded-full h-2 mb-3">
-                                <div 
-                                  className="bg-gradient-to-r from-orange-500 to-amber-500 h-2 rounded-full transition-all duration-300"
-                                  style={{ width: `${actionProgress[`sim-${index}`] || actionProgress[`exec-${index}`] || 0}%` }}
-                                />
-                              </div>
-                              
-                              <p className="text-white/70 text-sm">
-                                {executionDetails[`sim-${index}`] || executionDetails[`exec-${index}`] || 'Initializing...'}
-                              </p>
-                            </motion.div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex flex-col space-y-3">
-                        <button
-                          onClick={() => handleSimulateAction(`sim-${index}`, rec)}
-                          disabled={executingActions.has(`sim-${index}`) || executingActions.has(`exec-${index}`)}
-                          className="flex items-center justify-center px-6 py-3 bg-blue-600/80 hover:bg-blue-600 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
-                        >
-                          {executingActions.has(`sim-${index}`) ? (
-                            <>
-                              <Clock className="w-4 h-4 mr-2 animate-spin" />
-                              Simulating ({actionProgress[`sim-${index}`] || 0}%)
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-4 h-4 mr-2" />
-                              Simulate
-                            </>
-                          )}
-                        </button>
-                        
-                        <button
-                          onClick={() => handleExecuteAction(`exec-${index}`, rec)}
-                          disabled={executingActions.has(`exec-${index}`) || executingActions.has(`sim-${index}`) || simulationMode}
-                          className="flex items-center justify-center px-6 py-3 bg-orange-600/80 hover:bg-orange-600 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
-                        >
-                          {executingActions.has(`exec-${index}`) ? (
-                            <>
-                              <Clock className="w-4 h-4 mr-2 animate-spin" />
-                              Executing ({actionProgress[`exec-${index}`] || 0}%)
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              Execute
-                            </>
-                          )}
-                        </button>
+                              <span className="text-orange-400 text-sm font-mono">
+                                {actionProgress[`sim-${index}`] || actionProgress[`exec-${index}`] || 0}%
+                              </span>
+                            </div>
+                            
+                            <div className="w-full bg-white/20 rounded-full h-2 mb-3">
+                              <div 
+                                className="bg-gradient-to-r from-orange-500 to-amber-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${actionProgress[`sim-${index}`] || actionProgress[`exec-${index}`] || 0}%` }}
+                              />
+                            </div>
+                            
+                            <p className="text-white/70 text-sm">
+                              {executionDetails[`sim-${index}`] || executionDetails[`exec-${index}`] || 'Initializing...'}
+                            </p>
+                          </motion.div>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             ) : (
-              <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
+              <div className="text-center py-16">
                 <AlertTriangle className="w-16 h-16 text-white/30 mx-auto mb-6" />
                 <h3 className="text-xl font-medium text-white mb-3">No Active Recommendations</h3>
                 <p className="text-white/60 font-light">All systems operating within optimal parameters. Wattson is monitoring for opportunities.</p>

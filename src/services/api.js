@@ -3,7 +3,7 @@ import { fetchMockInventory, fetchMockPrices } from './mockData';
 import axios from 'axios';
 
 const BASE_URL = 'https://wattsonai.onrender.com/api';
-const USE_MOCK_DATA = false; // Set to false to use our local backend
+const USE_MOCK_DATA = false; // Set to false to use real API backend
 
 export const api = axios.create({
   baseURL: BASE_URL,
