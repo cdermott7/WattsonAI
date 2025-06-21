@@ -6,6 +6,8 @@ import { performanceMetrics, liveEvents, marketData, fleetData } from '../servic
 import AnimatedNumber from './AnimatedNumber';
 import SuccessNotification from './SuccessNotification';
 import MarkdownRenderer from './MarkdownRenderer';
+import { emailService } from '../utils/emailNotifications';
+import { browserNotificationService } from '../utils/browserNotifications';
 import { 
   Brain, 
   Activity, 
@@ -65,6 +67,8 @@ const CommandCenter = () => {
     message: '',
     impact: null
   });
+  const [showProfitReport, setShowProfitReport] = useState(false);
+  const [profitReportData, setProfitReportData] = useState(null);
   
   const wattson = new EnhancedWattsonAI();
   
@@ -87,18 +91,66 @@ const CommandCenter = () => {
   });
 
   useEffect(() => {
-    // Simulate real-time price updates
+    // Initialize browser notifications
+    const initNotifications = async () => {
+      try {
+        if (browserNotificationService.isSupported) {
+          await browserNotificationService.requestPermission();
+          
+          // Show welcome notification
+          setTimeout(() => {
+            browserNotificationService.showSystemStatus({
+              status: 'healthy',
+              message: 'Wattson AI Command Center is online and monitoring operations',
+              efficiency: liveMetrics.efficiency
+            });
+          }, 2000);
+        }
+      } catch (error) {
+        console.log('Browser notifications not available:', error.message);
+      }
+    };
+
+    initNotifications();
+
+    // Simulate real-time price updates and trigger notifications
     const interval = setInterval(() => {
-      setLiveMetrics(prev => ({
-        ...prev,
-        energyPrice: prev.energyPrice + (Math.random() - 0.5) * 0.005,
-        hashPrice: prev.hashPrice + (Math.random() - 0.5) * 0.3,
-        profitPerWatt: prev.profitPerWatt + (Math.random() - 0.5) * 0.002,
-        efficiency: Math.max(90, Math.min(99, prev.efficiency + (Math.random() - 0.5) * 0.5)),
-        powerUtilization: Math.max(40, Math.min(50, prev.powerUtilization + (Math.random() - 0.5) * 1)),
-        carbonEfficiency: Math.max(3, Math.min(6, prev.carbonEfficiency + (Math.random() - 0.5) * 0.2))
-      }));
-    }, 3000);
+      setLiveMetrics(prev => {
+        const newMetrics = {
+          ...prev,
+          energyPrice: prev.energyPrice + (Math.random() - 0.5) * 0.005,
+          hashPrice: prev.hashPrice + (Math.random() - 0.5) * 0.3,
+          profitPerWatt: prev.profitPerWatt + (Math.random() - 0.5) * 0.002,
+          efficiency: Math.max(90, Math.min(99, prev.efficiency + (Math.random() - 0.5) * 0.5)),
+          powerUtilization: Math.max(40, Math.min(50, prev.powerUtilization + (Math.random() - 0.5) * 1)),
+          carbonEfficiency: Math.max(3, Math.min(6, prev.carbonEfficiency + (Math.random() - 0.5) * 0.2))
+        };
+
+        // Trigger browser notifications for significant changes
+        const energyChange = Math.abs((newMetrics.energyPrice - prev.energyPrice) / prev.energyPrice) * 100;
+        if (energyChange > 2) { // 2% change
+          browserNotificationService.showEnergyOpportunity({
+            description: energyChange > 0 
+              ? `Energy prices increased ${energyChange.toFixed(1)}%` 
+              : `Energy prices decreased ${energyChange.toFixed(1)}%`,
+            potential: energyChange > 0 
+              ? 'Consider scaling down operations' 
+              : '$3,200/hour arbitrage opportunity'
+          });
+        }
+
+        // Efficiency alerts
+        if (newMetrics.efficiency < 92 && prev.efficiency >= 92) {
+          browserNotificationService.showCriticalAlert({
+            title: 'Efficiency Drop Detected',
+            message: `System efficiency dropped to ${newMetrics.efficiency.toFixed(1)}%`,
+            confidence: 94
+          });
+        }
+
+        return newMetrics;
+      });
+    }, 15000); // Check every 15 seconds
 
     return () => clearInterval(interval);
   }, []);
@@ -153,19 +205,69 @@ const CommandCenter = () => {
       }));
     }
 
-    // Generate AI response for the action
-    const response = generateActionResponse(actionType);
-    const aiMessage = {
-      id: Date.now(),
-      type: 'ai',
-      content: response,
-      timestamp: new Date(),
-      confidence: Math.floor(Math.random() * 15) + 85,
-      actionType: actionType
-    };
+    // Handle profit report specially
+    if (actionType === 'profit-report') {
+      const reportData = generateProfitReportData();
+      setProfitReportData(reportData);
+      setShowProfitReport(true);
+      
+      // Show browser notification for profit milestone
+      try {
+        await browserNotificationService.showProfitMilestone({
+          description: 'Daily profit report generated',
+          amount: reportData.periods['24h'].total
+        });
+      } catch (error) {
+        console.error('Failed to send profit milestone notification:', error);
+      }
+    } else {
+      // Generate AI response for other actions
+      const response = generateActionResponse(actionType);
+      const aiMessage = {
+        id: Date.now(),
+        type: 'ai',
+        content: response,
+        timestamp: new Date(),
+        confidence: Math.floor(Math.random() * 15) + 85,
+        actionType: actionType
+      };
 
-    setMessages(prev => [...prev, aiMessage]);
+      setMessages(prev => [...prev, aiMessage]);
+    }
     
+    // Send email notification for optimization actions
+    if (['optimize-fleet', 'energy-analysis', 'forecast-model'].includes(actionType)) {
+      try {
+        await emailService.sendOptimizationUpdate({
+          action: actionType.replace('-', ' ').toUpperCase(),
+          title: getSuccessData(actionType).title,
+          description: getSuccessData(actionType).message,
+          revenueImpact: getSuccessData(actionType).impact.revenue,
+          efficiencyImpact: getSuccessData(actionType).impact.efficiency,
+          carbonImpact: '-1.2 tCO2e',
+          nextRecommendations: [
+            'Monitor system performance for 24 hours',
+            'Review additional optimization opportunities',
+            'Schedule next strategic analysis'
+          ]
+        });
+      } catch (error) {
+        console.error('Failed to send optimization email:', error);
+      }
+    }
+
+    // Send browser notification for optimization completion
+    try {
+      await browserNotificationService.showOptimizationUpdate({
+        action: actionType.replace('-', ' ').toUpperCase(),
+        title: getSuccessData(actionType).title,
+        revenueImpact: getSuccessData(actionType).impact.revenue,
+        efficiencyImpact: getSuccessData(actionType).impact.efficiency
+      });
+    } catch (error) {
+      console.error('Failed to send browser notification:', error);
+    }
+
     // Show success notification
     const successData = getSuccessData(actionType);
     setSuccessNotification({
@@ -381,6 +483,68 @@ Order Status: **ACTIVE** | Monitoring: **CONTINUOUS**`,
     if (value >= thresholds.good) return 'from-green-500 to-emerald-600';
     if (value >= thresholds.warning) return 'from-yellow-500 to-amber-600';
     return 'from-red-500 to-rose-600';
+  };
+
+  const generateProfitReportData = () => {
+    const currentDate = new Date();
+    const last24h = {
+      mining: 308440,
+      inference: 127680,
+      arbitrage: 22980,
+      total: 459100
+    };
+    
+    const last7d = {
+      mining: 2159080,
+      inference: 893760,
+      arbitrage: 160860,
+      total: 3213700
+    };
+    
+    const last30d = {
+      mining: 9253200,
+      inference: 3830400,
+      arbitrage: 689400,
+      total: 13773000
+    };
+
+    return {
+      generated: currentDate,
+      periods: {
+        '24h': last24h,
+        '7d': last7d,
+        '30d': last30d
+      },
+      metrics: {
+        grossMargin: 68.4,
+        ebitda: 312847,
+        roi: 127,
+        pue: 1.09,
+        efficiency: {
+          mining: 96.7,
+          inference: 89.2,
+          overall: 93.4
+        }
+      },
+      breakdown: {
+        costs: {
+          energy: 145830,
+          operations: 45200,
+          maintenance: 12670,
+          other: 8200
+        },
+        facilities: [
+          { name: 'Virginia DC', revenue: 183640, efficiency: 94.2, capacity: '45%' },
+          { name: 'Oregon DC', revenue: 156280, efficiency: 96.8, capacity: '52%' },
+          { name: 'Texas DC', revenue: 119180, efficiency: 91.5, capacity: '38%' }
+        ]
+      },
+      trends: {
+        profitGrowth: 12.8,
+        efficiencyImprovement: 3.2,
+        carbonReduction: 8.7
+      }
+    };
   };
 
   return (
@@ -1007,9 +1171,229 @@ Order Status: **ACTIVE** | Monitoring: **CONTINUOUS**`,
                 >
                   Dismiss
                 </button>
-                <button className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-xl transition-all">
+                <button 
+                  onClick={async () => {
+                    // Send critical alert email notification
+                    try {
+                      await emailService.sendCriticalAlert({
+                        title: selectedNotification.title,
+                        message: selectedNotification.message,
+                        severity: selectedNotification.severity,
+                        confidence: selectedNotification.confidence,
+                        affectedSystems: 'Mining Operations, Energy Systems',
+                        recommendedAction: 'Execute recommended optimization immediately'
+                      });
+                    } catch (error) {
+                      console.error('Failed to send critical alert email:', error);
+                    }
+
+                    // Send browser notification for critical alert execution
+                    try {
+                      await browserNotificationService.showCriticalAlert({
+                        title: selectedNotification.title,
+                        message: `Executing recommendation for: ${selectedNotification.message}`,
+                        confidence: selectedNotification.confidence
+                      });
+                    } catch (error) {
+                      console.error('Failed to send critical alert browser notification:', error);
+                    }
+
+                    // Execute the recommendation action based on the notification
+                    const recommendationActions = {
+                      'critical': () => handleElementaryAction('optimize-fleet'),
+                      'warning': () => handleElementaryAction('energy-analysis'),
+                      'opportunity': () => handleElementaryAction('profit-report'),
+                      'info': () => handleElementaryAction('forecast-model')
+                    };
+                    
+                    const actionHandler = recommendationActions[selectedNotification.severity] || recommendationActions['info'];
+                    actionHandler();
+                    
+                    // Auto-dismiss the modal first
+                    setShowNotificationModal(false);
+                    
+                    // Then show success notification for the executed recommendation
+                    setTimeout(() => {
+                      setSuccessNotification({
+                        show: true,
+                        title: 'Recommendation Executed & Team Notified',
+                        message: `Successfully executed recommendation: ${selectedNotification.title}. Critical alert email sent to operations team.`,
+                        impact: {
+                          revenue: '+$2,450/hour estimated',
+                          efficiency: 'Team alerted & optimized'
+                        }
+                      });
+                    }, 200);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-xl transition-all"
+                >
                   Execute Recommendation
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Profit Report Modal */}
+      <AnimatePresence>
+        {showProfitReport && profitReportData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowProfitReport(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-900 rounded-3xl border border-white/20 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <Gauge className="w-8 h-8 text-purple-400" />
+                    <h2 className="text-2xl font-light text-white">Comprehensive Profit Report</h2>
+                  </div>
+                  <div className="text-white/60 text-sm">
+                    Generated: {profitReportData.generated.toLocaleString()}
+                  </div>
+                </div>
+
+                {/* Revenue Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  {Object.entries(profitReportData.periods).map(([period, data]) => (
+                    <div key={period} className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                      <h3 className="text-white font-medium mb-4">Last {period.toUpperCase()}</h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-white/70">Mining:</span>
+                          <span className="text-blue-400 font-mono">${data.mining.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-white/70">Inference:</span>
+                          <span className="text-emerald-400 font-mono">${data.inference.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-white/70">Arbitrage:</span>
+                          <span className="text-yellow-400 font-mono">${data.arbitrage.toLocaleString()}</span>
+                        </div>
+                        <div className="border-t border-white/20 pt-2">
+                          <div className="flex justify-between">
+                            <span className="text-white font-medium">Total:</span>
+                            <span className="text-green-400 font-mono font-medium">${data.total.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Performance Metrics */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-light text-white mb-4">Performance Metrics</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+                      <div className="text-2xl font-light text-green-400 mb-1">{profitReportData.metrics.grossMargin}%</div>
+                      <div className="text-white/60 text-sm">Gross Margin</div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+                      <div className="text-2xl font-light text-green-400 mb-1">${profitReportData.metrics.ebitda.toLocaleString()}</div>
+                      <div className="text-white/60 text-sm">EBITDA</div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+                      <div className="text-2xl font-light text-green-400 mb-1">{profitReportData.metrics.roi}%</div>
+                      <div className="text-white/60 text-sm">ROI (Annual)</div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+                      <div className="text-2xl font-light text-green-400 mb-1">{profitReportData.metrics.pue}</div>
+                      <div className="text-white/60 text-sm">PUE</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Facility Breakdown */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-light text-white mb-4">Facility Performance</h3>
+                  <div className="space-y-3">
+                    {profitReportData.breakdown.facilities.map((facility, index) => (
+                      <div key={index} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-white font-medium">{facility.name}</h4>
+                            <p className="text-white/60 text-sm">Capacity: {facility.capacity} | Efficiency: {facility.efficiency}%</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-medium text-green-400">${facility.revenue.toLocaleString()}</div>
+                            <div className="text-white/60 text-sm">24h Revenue</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-3">
+                  <button 
+                    onClick={() => setShowProfitReport(false)}
+                    className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all"
+                  >
+                    Close Report
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        // Send actual email with profit report
+                        const emailResults = await emailService.sendProfitReport({
+                          dateRange: 'Last 24 Hours',
+                          totalRevenue: profitReportData.periods['24h'].total,
+                          profitMargin: profitReportData.metrics.grossMargin,
+                          growthRate: profitReportData.trends.profitGrowth,
+                          miningRevenue: profitReportData.periods['24h'].mining,
+                          miningPercentage: ((profitReportData.periods['24h'].mining / profitReportData.periods['24h'].total) * 100).toFixed(1),
+                          inferenceRevenue: profitReportData.periods['24h'].inference,
+                          inferencePercentage: ((profitReportData.periods['24h'].inference / profitReportData.periods['24h'].total) * 100).toFixed(1),
+                          arbitrageRevenue: profitReportData.periods['24h'].arbitrage,
+                          arbitragePercentage: ((profitReportData.periods['24h'].arbitrage / profitReportData.periods['24h'].total) * 100).toFixed(1),
+                          ebitda: profitReportData.metrics.ebitda,
+                          ebitdaMargin: profitReportData.metrics.grossMargin,
+                          roi: profitReportData.metrics.roi,
+                          pue: profitReportData.metrics.pue,
+                          fleetEfficiency: profitReportData.metrics.efficiency.overall,
+                          facilities: profitReportData.breakdown.facilities
+                        });
+
+                        setSuccessNotification({
+                          show: true,
+                          title: 'Report Exported & Emailed',
+                          message: `Profit report sent to ${emailResults.length} recipients. Email IDs: ${emailResults.map(r => r.messageId?.slice(-6)).join(', ')}`,
+                          impact: {
+                            revenue: 'Report delivered',
+                            efficiency: 'Team notified'
+                          }
+                        });
+                      } catch (error) {
+                        setSuccessNotification({
+                          show: true,
+                          title: 'Export Error',
+                          message: 'Failed to send email report. Please try again.',
+                          impact: {
+                            revenue: 'Export failed',
+                            efficiency: 'Manual review needed'
+                          }
+                        });
+                      }
+                      setShowProfitReport(false);
+                    }}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl transition-all"
+                  >
+                    Export & Email
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

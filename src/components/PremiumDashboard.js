@@ -331,37 +331,66 @@ const PremiumDashboard = () => {
             </div>
           </div>
 
-          <div className="h-80">
+          <div className="h-80 p-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
+              <AreaChart 
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+              >
                 <defs>
                   <linearGradient id={`gradient-${selectedMetric}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={metricColors.primary} stopOpacity={0.3}/>
+                    <stop offset="5%" stopColor={metricColors.primary} stopOpacity={0.4}/>
+                    <stop offset="50%" stopColor={metricColors.primary} stopOpacity={0.1}/>
                     <stop offset="95%" stopColor={metricColors.primary} stopOpacity={0}/>
                   </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge> 
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
                 </defs>
                 <XAxis 
                   dataKey="time" 
-                  stroke="#9CA3AF" 
-                  fontSize={12}
+                  stroke="rgba(255, 255, 255, 0.4)" 
+                  fontSize={11}
+                  fontWeight={300}
                   axisLine={false}
                   tickLine={false}
+                  tick={{ fill: 'rgba(255, 255, 255, 0.6)' }}
+                  tickMargin={10}
                 />
                 <YAxis 
-                  stroke="#9CA3AF" 
-                  fontSize={12}
+                  stroke="rgba(255, 255, 255, 0.4)" 
+                  fontSize={11}
+                  fontWeight={300}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(value) => formatCurrency(value)}
+                  tick={{ fill: 'rgba(255, 255, 255, 0.6)' }}
+                  tickMargin={10}
+                  tickFormatter={(value) => {
+                    if (value < 1) return `$${value.toFixed(4)}`;
+                    if (value < 100) return `$${value.toFixed(2)}`;
+                    return `$${Math.round(value)}`;
+                  }}
+                  domain={['dataMin - 0.1', 'dataMax + 0.1']}
                 />
                 <Area
                   type="monotone"
                   dataKey={selectedMetric}
                   stroke={metricColors.primary}
-                  strokeWidth={3}
+                  strokeWidth={2}
                   fill={`url(#gradient-${selectedMetric})`}
-                  dot={{ fill: metricColors.primary, strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: metricColors.primary, strokeWidth: 2 }}
+                  dot={false}
+                  activeDot={{ 
+                    r: 6, 
+                    stroke: metricColors.primary, 
+                    strokeWidth: 3,
+                    fill: 'rgba(0, 0, 0, 0.8)',
+                    filter: 'url(#glow)'
+                  }}
+                  connectNulls={true}
                 />
               </AreaChart>
             </ResponsiveContainer>

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, X, Zap, TrendingUp } from 'lucide-react';
 
 const SuccessNotification = ({ show, onClose, title, message, impact }) => {
+  const [showDetails, setShowDetails] = useState(false);
   return (
     <AnimatePresence>
       {show && (
@@ -27,7 +28,7 @@ const SuccessNotification = ({ show, onClose, title, message, impact }) => {
               stiffness: 300,
               duration: 0.3 
             }}
-            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+            className="fixed inset-0 flex items-center justify-center z-50"
           >
             <div className="bg-gray-900/95 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl max-w-md w-full mx-4 overflow-hidden">
               {/* Header with Success Animation */}
@@ -120,6 +121,60 @@ const SuccessNotification = ({ show, onClose, title, message, impact }) => {
                   </motion.div>
                 )}
 
+                {/* Detailed Information */}
+                <AnimatePresence>
+                  {showDetails && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10"
+                    >
+                      <h4 className="text-white font-medium mb-3">📊 Detailed Analysis</h4>
+                      <div className="space-y-3 text-sm">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-white/60">Execution Time:</span>
+                            <div className="text-white">{new Date().toLocaleString()}</div>
+                          </div>
+                          <div>
+                            <span className="text-white/60">Status:</span>
+                            <div className="text-green-400">✅ Completed Successfully</div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <span className="text-white/60">System Components Affected:</span>
+                          <div className="text-white">Mining Fleet, Energy Management, AI Inference</div>
+                        </div>
+                        
+                        <div>
+                          <span className="text-white/60">Performance Metrics:</span>
+                          <div className="text-white">
+                            • Fleet Utilization: 94.7% (+2.3% improvement)
+                            <br />
+                            • Power Efficiency: 98.1% (optimal range)
+                            <br />
+                            • Network Latency: 12ms (excellent)
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <span className="text-white/60">Next Recommended Actions:</span>
+                          <div className="text-white">
+                            • Monitor performance for 24 hours
+                            <br />
+                            • Review efficiency trends weekly
+                            <br />
+                            • Schedule maintenance in 30 days
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* Close Button */}
                 <button
                   onClick={onClose}
@@ -143,8 +198,11 @@ const SuccessNotification = ({ show, onClose, title, message, impact }) => {
                   >
                     Continue
                   </button>
-                  <button className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-xl transition-all font-medium">
-                    View Details
+                  <button 
+                    onClick={() => setShowDetails(!showDetails)}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-xl transition-all font-medium"
+                  >
+                    {showDetails ? 'Hide Details' : 'View Details'}
                   </button>
                 </div>
               </motion.div>
