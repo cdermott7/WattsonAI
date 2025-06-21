@@ -31,10 +31,37 @@ export class EnhancedWattsonAI {
         "The solution is elementary:"
       ]
     };
+    
+    // Content filtering for inappropriate topics
+    this.blockedTopics = [
+      'politics', 'political', 'election', 'government', 'democrat', 'republican',
+      'war', 'warfare', 'military', 'army', 'conflict', 'violence', 'weapon',
+      'religion', 'religious', 'god', 'allah', 'jesus', 'muslim', 'christian',
+      'racism', 'racist', 'discrimination', 'hate', 'nazi', 'terrorist',
+      'drugs', 'cocaine', 'heroin', 'marijuana', 'illegal'
+    ];
   }
 
   generateGreeting() {
     return this.personality.greetings[Math.floor(Math.random() * this.personality.greetings.length)];
+  }
+
+  filterContent(input) {
+    const lowercaseInput = input.toLowerCase();
+    const containsBlockedTopic = this.blockedTopics.some(topic => 
+      lowercaseInput.includes(topic.toLowerCase())
+    );
+
+    if (containsBlockedTopic) {
+      return {
+        isBlocked: true,
+        response: `Elementary, my dear colleague! I must redirect our conversation to matters of mining operations and energy optimization. My expertise lies in strategic business analysis, not in topics outside our operational scope. 
+
+How may I assist with your mining fleet management, energy pricing analysis, or profit optimization strategies today? The data suggests numerous fascinating opportunities in our current market conditions.`
+      };
+    }
+
+    return { isBlocked: false };
   }
 
   analyzeMarketConditions() {
@@ -162,6 +189,12 @@ export class EnhancedWattsonAI {
   }
 
   processAdvancedQuery(query, context = {}) {
+    // First, filter for inappropriate content
+    const filterResult = this.filterContent(query);
+    if (filterResult.isBlocked) {
+      return filterResult.response;
+    }
+
     const lowercaseQuery = query.toLowerCase();
     
     // Advanced NLP pattern matching

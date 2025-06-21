@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { fetchPrices, fetchInventory, calculateProfitability } from '../services/api';
 import { useLiquidGlass } from './SimpleLiquidGlass';
@@ -68,14 +69,108 @@ const PremiumDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-orange-500/20 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-orange-500 rounded-full animate-spin"></div>
-          </div>
-          <p className="text-white/80 mt-6 text-lg font-light">Loading analytics dashboard...</p>
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center overflow-hidden">
+        {/* Dynamic Background */}
+        <div className="fixed inset-0 opacity-30">
+          <div className="absolute top-20 left-20 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/3 right-1/3 w-60 h-60 bg-purple-500/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
         </div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="text-center relative z-10"
+        >
+          <div className="relative mb-8">
+            {/* Animated Chart Icon */}
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-white/10 flex items-center justify-center"
+            >
+              <div className="relative">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  className="w-16 h-16 border-4 border-transparent border-t-blue-500 border-r-purple-500 rounded-full"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <motion.div
+                    animate={{ scale: [0.8, 1.2, 0.8] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <Activity className="w-6 h-6 text-blue-400" />
+                  </motion.div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Data Flow Animation */}
+            <div className="flex justify-center space-x-4 mb-6">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <motion.div
+                  key={i}
+                  animate={{ 
+                    y: [0, -10, 0],
+                    opacity: [0.3, 1, 0.3]
+                  }}
+                  transition={{ 
+                    duration: 1.2, 
+                    repeat: Infinity, 
+                    delay: i * 0.2 
+                  }}
+                  className="w-3 h-8 bg-gradient-to-t from-blue-500/30 to-blue-500 rounded-full"
+                />
+              ))}
+            </div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <h2 className="text-2xl font-extralight text-white tracking-tight mb-4">Analytics Dashboard</h2>
+            <p className="text-white/60 font-light mb-6">Aggregating real-time performance data...</p>
+            
+            {/* Loading Progress */}
+            <div className="w-64 mx-auto">
+              <div className="flex justify-between text-xs text-white/40 mb-2">
+                <span>Loading...</span>
+                <span>Processing data streams</span>
+              </div>
+              <div className="w-full bg-white/10 rounded-full h-1">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 2, ease: "easeInOut" }}
+                  className="h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* System Status */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="mt-8 space-y-2 text-xs text-white/40"
+          >
+            <div className="flex items-center justify-center">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full mr-2"
+              />
+              Connecting to market data feeds...
+            </div>
+            <div>✓ Fleet monitoring systems online</div>
+            <div>✓ Performance metrics calculated</div>
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
