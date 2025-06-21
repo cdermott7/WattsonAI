@@ -1,8 +1,9 @@
-import axios from 'axios';
-import { fetchMockPrices, fetchMockInventory } from './mockData';
+import { fetchMockInventory, fetchMockPrices } from './mockData';
 
-const BASE_URL = 'https://mara-hackathon-api.onrender.com';
-const USE_MOCK_DATA = true; // Set to false when API is available
+import axios from 'axios';
+
+const BASE_URL = 'http://localhost:3001/api';
+const USE_MOCK_DATA = false; // Set to false to use our local backend
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -19,9 +20,10 @@ export const fetchInventory = async () => {
   
   try {
     const response = await api.get('/inventory');
-    return response.data;
+    console.log('Inventory response from local backend:', response.data);
+    return response.data.data; // Extract data from our backend response
   } catch (error) {
-    console.error('Error fetching inventory, using mock data:', error);
+    console.error('Error fetching inventory from local backend, using mock data:', error);
     return await fetchMockInventory();
   }
 };
@@ -33,9 +35,10 @@ export const fetchPrices = async () => {
   
   try {
     const response = await api.get('/prices');
-    return response.data;
+    console.log('Prices response from local backend:', response.data);
+    return response.data.data; // Extract data from our backend response
   } catch (error) {
-    console.error('Error fetching prices, using mock data:', error);
+    console.error('Error fetching prices from local backend, using mock data:', error);
     return await fetchMockPrices();
   }
 };
