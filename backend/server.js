@@ -5,6 +5,8 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+// Define backend URL for internal API calls
+const BACKEND_URL = `http://localhost:${PORT}`;
 
 // Middleware
 app.use(cors());
@@ -202,7 +204,7 @@ app.post('/api/test-analysis', async (req, res) => {
     try {
         console.log('Proxying request to Anthropic API...');
         const response = await axios.post('https://api.anthropic.com/v1/messages', {
-            model: "claude-3-opus-20240229",
+            model: "claude-opus-4-0",
             max_tokens: 1024,
             messages: [
                 { role: "user", content: "Hello, world" }
@@ -242,89 +244,59 @@ app.post('/api/test-analysis', async (req, res) => {
 // Chat endpoint integrating with Claude AI
 app.post('/api/chat', async (req, res) => {
   try {
-    const { messages: userMessages, apiKey, siteName } = req.body; // extract credentials
-    // System prompt with explicit tool instructions and argument schemas
-    let prompt = `SYSTEM: You are Wattson AI for the MARA Hackathon API. Only discuss energy, hash, and machine allocation topics related to your site. The backend will automatically use your saved API key.
-Available tools:
-1) get_prices(): GET /prices (no arguments)
-2) get_inventory(): GET /inventory (no arguments)
-3) get_machines(): GET /machines (no user args; your API key is injected)
-4) set_allocation(): PUT /machines
-   - Provide args: {"air_miners": number, "hydro_miners": number, "immersion_miners": number, "asic_compute": number, "gpu_compute": number}
-   (API key is injected automatically)
-When invoking a tool, return ONLY a JSON object, for example:
-  {"tool":"set_allocation","args":{"gpu_compute":5,"immersion_miners":3}}
-After the tool runs and you receive its result, format the output as Markdown bullet points or a table for readability, then continue your response normally prefixed by "Assistant:".
-For regular conversation, respond normally without JSON.
+    const { messages: userMessages, apiKey, siteName } = req.body;
+    // Fetch latest external data via backend proxies
+    const [pricesRes, inventoryRes, machinesRes] = await Promise.all([
+      axios.get(`${BACKEND_URL}/api/prices`),
+      axios.get(`${BACKEND_URL}/api/inventory`),
+      axios.get(`${BACKEND_URL}/api/machines`, { headers: { 'X-Api-Key': apiKey }})
+    ]);
+    const prices = pricesRes.data.data;
+    const inventory = inventoryRes.data.data;
+    const machines = machinesRes.data.data;
+    // Build system prompt with context and analysis tasks
+    let prompt = `SYSTEM: You are Wattson AI for the MARA Hackathon API.<br/>
+<br/>
+<strong>Site:</strong> ${siteName}<br/>
+<strong>Pricing (latest):</strong> Energy $${prices[0].energy_price.toFixed(3)}, Hash $${prices[0].hash_price.toFixed(3)}, Token $${prices[0].token_price.toFixed(3)}<br/>
+<strong>Inventory:</strong> ASIC inference (power ${inventory.inference.asic.power}, tokens ${inventory.inference.asic.tokens}); GPU inference (power ${inventory.inference.gpu.power}, tokens ${inventory.inference.gpu.tokens})<br/>
+<strong>Miners:</strong> air ${inventory.miners.air.hashrate} TH/s @ ${inventory.miners.air.power} W; hydro ${inventory.miners.hydro.hashrate} TH/s @ ${inventory.miners.hydro.power} W; immersion ${inventory.miners.immersion.hashrate} TH/s @ ${inventory.miners.immersion.power} W<br/>
+<strong>Current Allocation:</strong> ASIC compute ${machines.asic_compute}, GPU compute ${machines.gpu_compute}, air miners ${machines.air_miners}, hydro miners ${machines.hydro_miners}, immersion miners ${machines.immersion_miners}<br/>
+<strong>Power Used:</strong> ${machines.total_power_used} W; <strong>Total Revenue:</strong> $${machines.total_revenue}<br/>
+<br/>
+Use this context to:
+<ul>
+  <li><strong>Analyze</strong> current pricing trends and inventory levels</li>
+  <li><strong>Assess</strong> operational performance and power efficiency</li>
+  <li><strong>Recommend</strong> allocation or optimization strategies</li>
+  <li><strong>Answer</strong> detailed questions about profitability, power usage, and resource availability</li>
+</ul>
+Now continue the conversation:
 \n`;
-    // Append conversation
+    // Append conversation history
     userMessages.forEach(msg => {
-      prompt += `\n\n${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}`;
+      prompt += `${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}\n`;
     });
-    prompt += '\n\nAssistant:';
-
-    // Call Claude
-    const response = await axios.post('https://api.anthropic.com/v1/complete', {
-      model: 'claude-2',
-      prompt,
-      max_tokens_to_sample: 300,
-      temperature: 0.7,
+    prompt += 'Assistant:';
+    // Call Claude via Messages API
+    const aiResp = await axios.post('https://api.anthropic.com/v1/messages', {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 3000,
+      system: prompt,
+      messages: userMessages.map(m => ({ role: m.role, content: m.content }))
     }, {
       headers: {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'Anthropic-Version': '2023-06-01',
-        'Content-Type': 'application/json'
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
       }
     });
-
-    let completion = response.data.completion.trim();
-    // Detect tool call
-    let toolResult;
-    try {
-      const toolCall = JSON.parse(completion);
-      switch (toolCall.tool) {
-        case 'get_prices':
-          toolResult = await axios.get('https://mara-hackathon-api.onrender.com/prices');
-          break;
-        case 'get_inventory':
-          toolResult = await axios.get('https://mara-hackathon-api.onrender.com/inventory');
-          break;
-        case 'get_machines':
-          toolResult = await axios.get('https://mara-hackathon-api.onrender.com/machines', { headers: { 'X-Api-Key': apiKey }});
-          break;
-        case 'set_allocation':
-          toolResult = await axios.put('https://mara-hackathon-api.onrender.com/machines', toolCall.args, { headers: { 'X-Api-Key': apiKey }});
-          break;
-        default:
-          throw new Error(`Unknown tool: ${toolCall.tool}`);
-      }
-      // Re-prompt Claude with tool result
-      const followupPrompt = prompt + `\n\nToolResponse: ${JSON.stringify(toolResult.data)}` + '\n\nAssistant:';
-      const followup = await axios.post('https://api.anthropic.com/v1/complete', {
-        model: 'claude-2',
-        prompt: followupPrompt,
-        max_tokens_to_sample: 300,
-        temperature: 0.7,
-      }, {
-        headers: {
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'Anthropic-Version': '2023-06-01',
-          'Content-Type': 'application/json'
-        }
-      });
-      completion = followup.data.completion;
-    } catch (e) {
-      // Not a tool call or error in tool; proceed with original completion
-    }
+    const completion = aiResp.data.content.map(c => c.text).join('').trim();
     res.json({ success: true, completion });
   } catch (error) {
     console.error('Error in chat endpoint:', error);
     if (error.response) {
-      console.error('Downstream error data:', error.response.data);
-      return res.status(error.response.status).json({
-        success: false,
-        error: error.response.data
-      });
+      return res.status(error.response.status).json({ success: false, error: error.response.data });
     }
     res.status(500).json({ success: false, error: error.message });
   }
@@ -428,7 +400,7 @@ Please provide a valid JSON response with the exact format specified above. Calc
     }
 
     const response = await axios.post('https://api.anthropic.com/v1/messages', {
-      model: "claude-3-opus-20240229",
+      model: "claude-sonnet-4-0",
       max_tokens: 2048,
       messages: [
         { 
@@ -559,7 +531,7 @@ Provide ONLY the raw JSON object in your response, without any surrounding text 
     }
 
     const response = await axios.post('https://api.anthropic.com/v1/messages', {
-        model: "claude-3-opus-20240229",
+        model: "claude-sonnet-4-0",
         max_tokens: 1024,
         messages: [{ role: "user", content: summaryPrompt }]
     }, {
