@@ -41,11 +41,11 @@ const Configuration = () => {
   const [config, setConfig] = useState({
     // MARA API Configuration
     apiUrl: 'https://api.marathondh.com/v1',
-    apiKey: '••••••••••••••••••••••••••••••••',
+    apiKey: '947a8153-edf4-4093-aa92-e6efe0bd2682',
     refreshInterval: 30,
     timeout: 10000,
     retryAttempts: 3,
-    siteName: 'HackFestSite',
+    siteName: 'MaraHackathon',
     sitePower: 1000000,
     
     // Wattson AI Configuration
