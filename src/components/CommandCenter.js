@@ -40,6 +40,10 @@ const CommandCenter = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [speechRecognition, setSpeechRecognition] = useState(null);
+  const [transcript, setTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [speechSupported, setSpeechSupported] = useState(false);
   const [notifications, setNotifications] = useState(liveEvents.slice(0, 2));
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
@@ -92,6 +96,63 @@ const CommandCenter = () => {
   });
 
   useEffect(() => {
+    // Initialize speech recognition
+    const initSpeechRecognition = () => {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (SpeechRecognition) {
+        setSpeechSupported(true);
+        const recognition = new SpeechRecognition();
+        
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        recognition.onstart = () => {
+          console.log('Speech recognition started');
+        };
+        
+        recognition.onresult = (event) => {
+          let finalTranscript = '';
+          let interimTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript;
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+          
+          if (finalTranscript) {
+            setInputText(prev => prev + finalTranscript);
+            setTranscript(finalTranscript);
+          }
+          
+          setInterimTranscript(interimTranscript);
+        };
+        
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+        };
+        
+        recognition.onend = () => {
+          console.log('Speech recognition ended');
+          setIsListening(false);
+          setInterimTranscript('');
+        };
+        
+        setSpeechRecognition(recognition);
+      } else {
+        console.warn('Speech recognition not supported');
+        setSpeechSupported(false);
+      }
+    };
+
+    initSpeechRecognition();
+
     // Initialize browser notifications
     const initNotifications = async () => {
       try {
@@ -153,7 +214,13 @@ const CommandCenter = () => {
       });
     }, 15000); // Check every 15 seconds
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      // Cleanup speech recognition
+      if (speechRecognition) {
+        speechRecognition.stop();
+      }
+    };
   }, []);
 
   const handleSendMessage = async () => {
@@ -716,14 +783,42 @@ Order Status: **ACTIVE** | Monitoring: **CONTINUOUS**`,
 
               <div className="space-y-4">
                 <div className="flex space-x-3">
-                  <input
-                    type="text"
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder="Command Wattson: 'Optimize fleet allocation' or 'Analyze energy forecast'"
-                    className="flex-1 bg-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 backdrop-blur-sm border border-white/20 placeholder-white/50"
-                  />
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder={isListening ? "🎙️ Listening... speak now" : "Command Wattson: 'Optimize fleet allocation' or 'Analyze energy forecast'"}
+                      className={`w-full bg-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${
+                        isListening ? 'ring-red-400/30 border-red-400/50' : 'ring-orange-500/50 border-white/20'
+                      } backdrop-blur-sm border placeholder-white/50 transition-all`}
+                    />
+                    {/* Interim speech results overlay */}
+                    {interimTranscript && (
+                      <div className="absolute inset-0 px-4 py-3 pointer-events-none flex items-center overflow-hidden">
+                        <span className="text-white/80 text-sm">
+                          {inputText}
+                          <span className="text-orange-300 animate-pulse font-medium">{interimTranscript}</span>
+                          <span className="inline-block w-2 h-4 bg-orange-400 ml-1 animate-pulse"></span>
+                        </span>
+                      </div>
+                    )}
+                    {/* Recording indicator */}
+                    {isListening && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="flex space-x-1">
+                          {[0, 1, 2].map((i) => (
+                            <div
+                              key={i}
+                              className="w-1 h-3 bg-red-400 rounded-full animate-pulse"
+                              style={{ animationDelay: `${i * 0.15}s`, animationDuration: '0.8s' }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => setShowLimitOrders(!showLimitOrders)}
                     className="px-4 py-3 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-xl transition-all backdrop-blur-sm"
@@ -732,14 +827,25 @@ Order Status: **ACTIVE** | Monitoring: **CONTINUOUS**`,
                     <Target className="w-4 h-4 text-purple-400" />
                   </button>
                   <button
-                    onClick={() => setIsListening(!isListening)}
-                    className={`px-4 py-3 rounded-xl transition-all backdrop-blur-sm ${
+                    onClick={handleMicrophoneToggle}
+                    disabled={!speechSupported}
+                    className={`px-4 py-3 rounded-xl transition-all backdrop-blur-sm relative ${
                       isListening 
-                        ? 'bg-red-600/80 hover:bg-red-600 border-red-500/50' 
-                        : 'bg-white/10 hover:bg-white/20 border-white/20'
+                        ? 'bg-red-600/80 hover:bg-red-600 border-red-500/50 animate-pulse' 
+                        : speechSupported 
+                          ? 'bg-white/10 hover:bg-white/20 border-white/20'
+                          : 'bg-gray-600/50 cursor-not-allowed border-gray-500/50'
                     } border`}
+                    title={!speechSupported ? 'Speech recognition not supported' : isListening ? 'Stop recording' : 'Start voice input'}
                   >
-                    {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-white" />}
+                    {isListening ? (
+                      <>
+                        <MicOff className="w-4 h-4 text-white" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+                      </>
+                    ) : (
+                      <Mic className={`w-4 h-4 ${speechSupported ? 'text-white' : 'text-gray-400'}`} />
+                    )}
                   </button>
                   <button
                     onClick={handleSendMessage}

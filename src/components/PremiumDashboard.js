@@ -1,10 +1,11 @@
 import { Activity, Brain, Cpu, DollarSign, Server, TrendingDown, TrendingUp, Zap } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import React, { useState } from 'react';
 import { formatChartData, formatCurrency, getMetricColor, useData } from '../context/DataContext';
 
 import AnalysisPanel from './AnalysisPanel';
+import AnimatedNumber from './AnimatedNumber';
 import MachineAllocation from './MachineAllocation';
 import { useLiquidGlass } from './SimpleLiquidGlass';
 
@@ -23,6 +24,9 @@ const PremiumDashboard = () => {
   } = useData();
   
   const [selectedMetric, setSelectedMetric] = useState('energy');
+  const [hoveredData, setHoveredData] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Liquid glass refs for major components
   const chartContainerRef = useLiquidGlass({ width: 800, height: 400 });
@@ -140,6 +144,53 @@ const PremiumDashboard = () => {
   const chartData = formatChartData(prices);
   const latestPrice = prices[0] || {};
   const metricColors = getMetricColor(selectedMetric);
+  
+  // Custom tooltip component to suppress default tooltip
+  const CustomTooltip = () => null;
+
+  const getMetricValue = (data, metric) => {
+    if (!data) {
+      return 0;
+    }
+    
+    let value;
+    switch (metric) {
+      case 'energy': 
+        value = data.energy;
+        if (value === undefined) value = data.energy_price;
+        break;
+      case 'hash': 
+        value = data.hash;
+        if (value === undefined) value = data.hash_price;
+        break;
+      case 'token': 
+        value = data.token;
+        if (value === undefined) value = data.token_price;
+        break;
+      default: 
+        value = 0;
+    }
+    
+    return Number(value) || 0;
+  };
+
+  const getMetricLabel = (metric) => {
+    switch (metric) {
+      case 'energy': return 'Energy Price';
+      case 'hash': return 'Hash Price';
+      case 'token': return 'Token Price';
+      default: return 'Price';
+    }
+  };
+
+  const getMetricSuffix = (metric) => {
+    switch (metric) {
+      case 'energy': return '/kWh';
+      case 'hash': return '/TH';
+      case 'token': return '';
+      default: return '';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black overflow-hidden">
@@ -284,11 +335,22 @@ const PremiumDashboard = () => {
             </div>
           </div>
 
-          <div className="h-80 p-4">
+          <div className="h-80 p-4 relative">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart 
                 data={chartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                onMouseMove={(e) => {
+                  if (e && e.activePayload && e.activePayload.length > 0) {
+                    const payload = e.activePayload[0].payload;
+                    setHoveredData(payload);
+                    setShowTooltip(true);
+                  }
+                }}
+                onMouseLeave={() => {
+                  setShowTooltip(false);
+                  setHoveredData(null);
+                }}
               >
                 <defs>
                   <linearGradient id={`gradient-${selectedMetric}`} x1="0" y1="0" x2="0" y2="1">
@@ -356,8 +418,60 @@ const PremiumDashboard = () => {
                   connectNulls={true}
                   animationDuration={800}
                 />
+                <Tooltip content={<CustomTooltip />} />
               </AreaChart>
             </ResponsiveContainer>
+            
+            {/* Custom Floating Tooltip */}
+            <AnimatePresence>
+              {showTooltip && hoveredData && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none"
+                >
+                  <div className="bg-black/90 backdrop-blur-xl rounded-2xl border border-white/20 p-6 shadow-2xl">
+                    <div className="text-center space-y-4">
+                      <div className="text-white/60 text-sm font-medium">
+                        {getMetricLabel(selectedMetric)}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <AnimatedNumber 
+                          value={getMetricValue(hoveredData, selectedMetric)}
+                          prefix="$"
+                          suffix={getMetricSuffix(selectedMetric)}
+                          decimals={selectedMetric === 'energy' ? 4 : selectedMetric === 'token' ? 3 : 2}
+                          fontSize="text-5xl"
+                          color={selectedMetric === 'energy' ? 'text-yellow-400' : selectedMetric === 'hash' ? 'text-blue-400' : 'text-emerald-400'}
+                          className="font-light"
+                        />
+                      </div>
+                      
+                      <div className="text-white/50 text-xs">
+                        {hoveredData.time}
+                      </div>
+                      
+                      {/* Insight based on value */}
+                      <div className="text-xs text-white/70 max-w-xs text-center">
+                        {/* Insights only */}
+                        {selectedMetric === 'energy' && getMetricValue(hoveredData, selectedMetric) < 0.06 && (
+                          <div>⚡ Low energy cost - optimal mining window</div>
+                        )}
+                        {selectedMetric === 'hash' && getMetricValue(hoveredData, selectedMetric) > 8 && (
+                          <div>📈 High hash price - excellent profitability</div>
+                        )}
+                        {selectedMetric === 'token' && getMetricValue(hoveredData, selectedMetric) > 2 && (
+                          <div>🧠 Strong token value - inference operations favorable</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

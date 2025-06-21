@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { fetchPrices, fetchInventory, calculateProfitability } from '../services/api';
 import { useLiquidGlass } from './SimpleLiquidGlass';
 import MarkdownRenderer from './MarkdownRenderer';
-import { Send, Mic, MicOff, Brain, User, Minimize2, Maximize2 } from 'lucide-react';
+import { Send, Mic, MicOff, Brain, User, Minimize2, Maximize2, Expand, Shrink } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 const PremiumChatWidget = () => {
@@ -20,14 +20,18 @@ const PremiumChatWidget = () => {
   const [isListening, setIsListening] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [data, setData] = useState({ prices: [], inventory: null, profitability: null });
   const [isLoading, setIsLoading] = useState(false);
   
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Liquid glass for chat container
-  const chatContainerRef = useLiquidGlass({ width: 420, height: 600 });
+  // Liquid glass for chat container - dynamic sizing
+  const chatContainerRef = useLiquidGlass({ 
+    width: isFullScreen ? window.innerWidth * 0.8 : 420, 
+    height: isFullScreen ? window.innerHeight * 0.8 : 600 
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,6 +55,20 @@ const PremiumChatWidget = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Handle escape key for fullscreen mode
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && isFullScreen) {
+        setIsFullScreen(false);
+      }
+    };
+
+    if (isFullScreen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isFullScreen]);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -169,12 +187,20 @@ const PremiumChatWidget = () => {
   }
 
   return (
-    <div className="fixed bottom-8 right-8 z-50">
+    <div className={`fixed z-50 transition-all duration-500 ${
+      isFullScreen 
+        ? 'inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm' 
+        : 'bottom-8 right-8'
+    }`}>
       <div 
         ref={chatContainerRef}
-        className={`relative bg-black/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 transition-all duration-300 ${
-          isMinimized ? 'w-80 h-20' : 'w-96 h-[600px]'
-        } flex flex-col`}
+        className={`relative bg-black/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 transition-all duration-500 flex flex-col ${
+          isFullScreen 
+            ? 'w-[80vw] h-[80vh] max-w-6xl max-h-[900px]' 
+            : isMinimized 
+              ? 'w-80 h-20' 
+              : 'w-96 h-[600px]'
+        }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -193,14 +219,26 @@ const PremiumChatWidget = () => {
           
           <div className="flex items-center space-x-2">
             <button
+              onClick={() => {
+                setIsFullScreen(!isFullScreen);
+                if (isMinimized) setIsMinimized(false);
+              }}
+              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              title={isFullScreen ? 'Exit fullscreen' : 'Fullscreen'}
+            >
+              {isFullScreen ? <Shrink className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
+            </button>
+            <button
               onClick={() => setIsMinimized(!isMinimized)}
               className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              title={isMinimized ? 'Expand' : 'Minimize'}
             >
               {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
             </button>
             <button
               onClick={() => setIsExpanded(false)}
               className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              title="Close"
             >
               ×
             </button>
@@ -216,7 +254,9 @@ const PremiumChatWidget = () => {
                   key={message.id}
                   className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`max-w-xs lg:max-w-sm ${
+                  <div className={`${
+                    isFullScreen ? 'max-w-2xl' : 'max-w-xs lg:max-w-sm'
+                  } ${
                     message.type === 'user'
                       ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-2xl rounded-br-lg'
                       : 'bg-white/10 backdrop-blur-sm text-gray-100 rounded-2xl rounded-bl-lg border border-white/20'
