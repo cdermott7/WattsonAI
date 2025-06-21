@@ -223,6 +223,18 @@ const CommandCenter = () => {
     };
   }, []);
 
+  // Toggle microphone input for speech recognition
+  const handleMicrophoneToggle = () => {
+    if (!speechRecognition) return;
+    if (isListening) {
+      speechRecognition.stop();
+      setIsListening(false);
+    } else {
+      speechRecognition.start();
+      setIsListening(true);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
     const userMessage = { id: Date.now(), type: 'user', content: inputText, timestamp: new Date() };
