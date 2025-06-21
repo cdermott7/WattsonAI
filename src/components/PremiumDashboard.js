@@ -1,12 +1,12 @@
 import { Activity, Brain, Cpu, DollarSign, Server, TrendingDown, TrendingUp, Zap } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import React, { useState } from 'react';
 import { formatChartData, formatCurrency, getMetricColor, useData } from '../context/DataContext';
 
 import AnalysisPanel from './AnalysisPanel';
-import MachineAllocation from './MachineAllocation';
 import AnimatedNumber from './AnimatedNumber';
+import MachineAllocation from './MachineAllocation';
 import { useLiquidGlass } from './SimpleLiquidGlass';
 
 const PremiumDashboard = () => {
@@ -145,21 +145,8 @@ const PremiumDashboard = () => {
   const latestPrice = prices[0] || {};
   const metricColors = getMetricColor(selectedMetric);
   
-  // Clean chart data ready for display
-
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length > 0) {
-      const data = payload[0].payload;
-      setHoveredData(data);
-      setShowTooltip(true);
-      return null; // We'll render our custom tooltip separately
-    } else {
-      setShowTooltip(false);
-      setHoveredData(null);
-    }
-    return null;
-  };
+  // Custom tooltip component to suppress default tooltip
+  const CustomTooltip = () => null;
 
   const getMetricValue = (data, metric) => {
     if (!data) {
@@ -169,22 +156,21 @@ const PremiumDashboard = () => {
     let value;
     switch (metric) {
       case 'energy': 
-        // Use 'energy' field from chart data
-        value = data.energy !== undefined ? data.energy : 0;
+        value = data.energy;
+        if (value === undefined) value = data.energy_price;
         break;
       case 'hash': 
-        // Use 'hash' field from chart data
-        value = data.hash !== undefined ? data.hash : 0;
+        value = data.hash;
+        if (value === undefined) value = data.hash_price;
         break;
       case 'token': 
-        // Use 'token' field from chart data (this maps to 'value' in the API)
-        value = data.token !== undefined ? data.token : 0;
+        value = data.token;
+        if (value === undefined) value = data.token_price;
         break;
       default: 
         value = 0;
     }
     
-    // Value extracted successfully
     return Number(value) || 0;
   };
 
@@ -454,13 +440,7 @@ const PremiumDashboard = () => {
                       
                       <div className="space-y-2">
                         <AnimatedNumber 
-                          value={(() => {
-                            if (!hoveredData) return 0;
-                            if (selectedMetric === 'energy') return hoveredData.energy || hoveredData.energy_price || 0.0647;
-                            if (selectedMetric === 'hash') return hoveredData.hash || hoveredData.hash_price || 8.44;
-                            if (selectedMetric === 'token') return hoveredData.token || hoveredData.token_price || 2.91;
-                            return 0;
-                          })()}
+                          value={getMetricValue(hoveredData, selectedMetric)}
                           prefix="$"
                           suffix={getMetricSuffix(selectedMetric)}
                           decimals={selectedMetric === 'energy' ? 4 : selectedMetric === 'token' ? 3 : 2}
