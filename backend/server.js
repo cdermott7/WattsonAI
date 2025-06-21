@@ -321,6 +321,7 @@ app.post('/api/analysis', async (req, res) => {
 
 These actions should aim to optimize revenue, minimize costs, and efficiently utilize available resources. Consider strategies like:
    * Adjusting allocations of different miner types (air, hydro, immersion).
+   * Make sure the total number of miners is less than 50.
    * Adjusting allocations of different inference types (ASIC, GPU).
    * Prioritizing operations based on profitability.
    * Any other relevant strategic moves.
