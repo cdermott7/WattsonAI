@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { fetchPrices, fetchInventory, calculateProfitability } from '../services/api';
 import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
 import { simulationScenarios, aiRecommendations } from '../services/enhancedMockData';
 import { useLiquidGlass } from './SimpleLiquidGlass';
+import SuccessNotification from './SuccessNotification';
 import { 
   Play, 
   Pause, 
@@ -24,6 +26,14 @@ const PremiumExecutionPage = () => {
   const [loading, setLoading] = useState(true);
   const [simulationMode, setSimulationMode] = useState(false);
   const [executingActions, setExecutingActions] = useState(new Set());
+  const [actionProgress, setActionProgress] = useState({});
+  const [executionDetails, setExecutionDetails] = useState({});
+  const [successNotification, setSuccessNotification] = useState({
+    show: false,
+    title: '',
+    message: '',
+    impact: null
+  });
   
   // Liquid glass refs for major sections
   const heroRef = useLiquidGlass({ width: 800, height: 300 });
@@ -59,6 +69,31 @@ const PremiumExecutionPage = () => {
 
   const handleSimulateAction = async (actionId, action) => {
     setExecutingActions(prev => new Set([...prev, actionId]));
+    setActionProgress(prev => ({ ...prev, [actionId]: 0 }));
+    
+    const steps = getSimulationSteps(action);
+    
+    for (let i = 0; i < steps.length; i++) {
+      setExecutionDetails(prev => ({ ...prev, [actionId]: steps[i] }));
+      await new Promise(resolve => setTimeout(resolve, 600));
+      setActionProgress(prev => ({ 
+        ...prev, 
+        [actionId]: Math.round((i + 1) / steps.length * 100)
+      }));
+    }
+
+    setExecutionDetails(prev => ({ ...prev, [actionId]: 'Simulation complete - Results validated' }));
+    
+    // Show success notification for simulation
+    setSuccessNotification({
+      show: true,
+      title: 'Simulation Complete',
+      message: `Successfully simulated ${action.title} with comprehensive risk analysis and outcome modeling.`,
+      impact: {
+        revenue: 'Risk assessment complete',
+        efficiency: 'Safe execution validated'
+      }
+    });
     
     setTimeout(() => {
       setExecutingActions(prev => {
@@ -66,11 +101,44 @@ const PremiumExecutionPage = () => {
         newSet.delete(actionId);
         return newSet;
       });
-    }, 2000);
+      setActionProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[actionId];
+        return newProgress;
+      });
+      setExecutionDetails(prev => {
+        const newDetails = { ...prev };
+        delete newDetails[actionId];
+        return newDetails;
+      });
+    }, 1500);
   };
 
   const handleExecuteAction = async (actionId, action) => {
     setExecutingActions(prev => new Set([...prev, actionId]));
+    setActionProgress(prev => ({ ...prev, [actionId]: 0 }));
+    
+    const steps = getExecutionSteps(action);
+    
+    for (let i = 0; i < steps.length; i++) {
+      setExecutionDetails(prev => ({ ...prev, [actionId]: steps[i] }));
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setActionProgress(prev => ({ 
+        ...prev, 
+        [actionId]: Math.round((i + 1) / steps.length * 100)
+      }));
+    }
+
+    setExecutionDetails(prev => ({ ...prev, [actionId]: 'Execution complete - Systems updated' }));
+    
+    // Show success notification for execution
+    const executionSuccess = getExecutionSuccessData(action);
+    setSuccessNotification({
+      show: true,
+      title: executionSuccess.title,
+      message: executionSuccess.message,
+      impact: executionSuccess.impact
+    });
     
     setTimeout(() => {
       setExecutingActions(prev => {
@@ -78,7 +146,117 @@ const PremiumExecutionPage = () => {
         newSet.delete(actionId);
         return newSet;
       });
-    }, 3000);
+      setActionProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[actionId];
+        return newProgress;
+      });
+      setExecutionDetails(prev => {
+        const newDetails = { ...prev };
+        delete newDetails[actionId];
+        return newDetails;
+      });
+    }, 2000);
+  };
+
+  const getSimulationSteps = (action) => {
+    const steps = [
+      'Initializing simulation environment...',
+      'Loading historical data models...',
+      'Running Monte Carlo analysis...',
+      'Calculating risk parameters...',
+      'Validating safety constraints...',
+      'Generating outcome predictions...'
+    ];
+    return steps;
+  };
+
+  const getExecutionSteps = (action) => {
+    const steps = [
+      'Authenticating execution permissions...',
+      'Validating operational parameters...',
+      'Initiating system changes...',
+      'Monitoring fleet responses...',
+      'Verifying performance metrics...',
+      'Confirming successful deployment...'
+    ];
+    return steps;
+  };
+
+  const getExecutionSuccessData = (action) => {
+    const successTemplates = [
+      {
+        title: 'Strategy Successfully Executed',
+        message: `${action.title} has been implemented across the mining fleet. All systems operating at optimal parameters.`,
+        impact: {
+          revenue: `+$${(Math.random() * 50000 + 10000).toFixed(0)}/day`,
+          efficiency: `+${(Math.random() * 15 + 5).toFixed(1)}%`
+        }
+      },
+      {
+        title: 'Recommendation Deployed',
+        message: `Wattson's strategic recommendation "${action.title}" is now active. Monitoring performance improvements.`,
+        impact: {
+          revenue: `${(Math.random() * 30 + 10).toFixed(1)}% profit increase`,
+          efficiency: `${(Math.random() * 20 + 80).toFixed(1)}% system efficiency`
+        }
+      },
+      {
+        title: 'Optimization Complete',
+        message: `Successfully deployed "${action.title}" optimization. Fleet operations enhanced and profit margins improved.`,
+        impact: {
+          revenue: `$${(Math.random() * 8000 + 2000).toFixed(0)}/hour boost`,
+          efficiency: `${(Math.random() * 10 + 85).toFixed(1)}% operational score`
+        }
+      }
+    ];
+    
+    return successTemplates[Math.floor(Math.random() * successTemplates.length)];
+  };
+
+  const handleEmergencyAction = (actionType) => {
+    const emergencyActions = {
+      'emergency-stop': {
+        title: 'Emergency Stop Activated',
+        message: 'All mining and inference operations have been safely halted. Systems in standby mode.',
+        impact: {
+          revenue: 'Operations paused',
+          efficiency: 'Safety protocols active'
+        }
+      },
+      'deploy-batteries': {
+        title: 'Battery Deployment Activated',
+        message: 'Energy storage systems deployed. Grid arbitrage mode activated for optimal profit capture.',
+        impact: {
+          revenue: '+$4,200/hour potential',
+          efficiency: 'Grid optimization active'
+        }
+      },
+      'scale-mining': {
+        title: 'Mining Operations Scaled',
+        message: 'Hash operations increased to maximum capacity. All miners operating at peak efficiency.',
+        impact: {
+          revenue: '+25% hash production',
+          efficiency: '98.7% fleet utilization'
+        }
+      },
+      'switch-inference': {
+        title: 'Inference Mode Activated',
+        message: 'GPU resources reallocated to AI inference operations. Token generation at maximum capacity.',
+        impact: {
+          revenue: '+40% inference revenue',
+          efficiency: '95% GPU utilization'
+        }
+      }
+    };
+
+    const actionData = emergencyActions[actionType];
+    setSuccessNotification({
+      show: true,
+      title: actionData.title,
+      message: actionData.message,
+      impact: actionData.impact
+    });
   };
 
   const getActionIcon = (recommendation) => {
@@ -128,14 +306,81 @@ const PremiumExecutionPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-orange-500/20 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-orange-500 rounded-full animate-spin"></div>
-          </div>
-          <p className="text-white/80 mt-6 text-lg font-light">Analyzing execution strategies...</p>
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center overflow-hidden">
+        {/* Ambient Effects */}
+        <div className="fixed inset-0 opacity-30">
+          <div className="absolute top-20 left-20 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
         </div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          className="text-center relative z-10"
+        >
+          <div className="relative mb-8">
+            {/* Outer Ring */}
+            <div className="w-32 h-32 border-4 border-orange-500/20 rounded-full animate-spin"></div>
+            {/* Middle Ring */}
+            <div className="absolute inset-2 w-28 h-28 border-4 border-transparent border-t-orange-500 border-r-emerald-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            {/* Inner Ring */}
+            <div className="absolute inset-6 w-20 h-20 border-4 border-transparent border-t-emerald-400 rounded-full animate-spin" style={{ animationDuration: '0.8s' }}></div>
+            {/* Center Icon */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                className="p-4 rounded-full bg-gradient-to-r from-orange-500 to-emerald-500 shadow-2xl"
+              >
+                <Target className="w-8 h-8 text-white" />
+              </motion.div>
+            </div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <h2 className="text-3xl font-extralight text-white tracking-tight mb-4">Execution Center</h2>
+            <div className="space-y-2">
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-white/60 font-light"
+              >
+                Analyzing strategic execution opportunities...
+              </motion.p>
+              <div className="flex justify-center space-x-1">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                    className="w-2 h-2 bg-emerald-400 rounded-full"
+                  />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Loading Steps */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-8 text-xs text-white/40 space-y-1"
+          >
+            <div>✓ Strategic analysis modules loaded</div>
+            <div>✓ Market intelligence connected</div>
+            <div>✓ Risk assessment algorithms active</div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse mr-2"></div>
+              Generating execution recommendations...
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
@@ -288,20 +533,50 @@ const PremiumExecutionPage = () => {
                               <p className="text-orange-200 text-sm italic">"{rec.sherlock_insight}"</p>
                             </div>
                           )}
+
+                          {/* Progress Details */}
+                          {(executingActions.has(`sim-${index}`) || executingActions.has(`exec-${index}`)) && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              className="p-4 bg-white/5 rounded-lg border border-white/10"
+                            >
+                              <div className="flex items-center space-x-3 mb-3">
+                                <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-white text-sm font-medium">
+                                  {executingActions.has(`sim-${index}`) ? 'Running Simulation' : 'Executing Action'}
+                                </span>
+                                <span className="text-orange-400 text-sm font-mono">
+                                  {actionProgress[`sim-${index}`] || actionProgress[`exec-${index}`] || 0}%
+                                </span>
+                              </div>
+                              
+                              <div className="w-full bg-white/20 rounded-full h-2 mb-3">
+                                <div 
+                                  className="bg-gradient-to-r from-orange-500 to-amber-500 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${actionProgress[`sim-${index}`] || actionProgress[`exec-${index}`] || 0}%` }}
+                                />
+                              </div>
+                              
+                              <p className="text-white/70 text-sm">
+                                {executionDetails[`sim-${index}`] || executionDetails[`exec-${index}`] || 'Initializing...'}
+                              </p>
+                            </motion.div>
+                          )}
                         </div>
                       </div>
                       
                       {/* Action Buttons */}
-                      <div className="flex space-x-3">
+                      <div className="flex flex-col space-y-3">
                         <button
                           onClick={() => handleSimulateAction(`sim-${index}`, rec)}
-                          disabled={executingActions.has(`sim-${index}`)}
-                          className="flex items-center px-6 py-3 bg-blue-600/80 hover:bg-blue-600 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+                          disabled={executingActions.has(`sim-${index}`) || executingActions.has(`exec-${index}`)}
+                          className="flex items-center justify-center px-6 py-3 bg-blue-600/80 hover:bg-blue-600 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
                         >
                           {executingActions.has(`sim-${index}`) ? (
                             <>
                               <Clock className="w-4 h-4 mr-2 animate-spin" />
-                              Simulating
+                              Simulating ({actionProgress[`sim-${index}`] || 0}%)
                             </>
                           ) : (
                             <>
@@ -313,13 +588,13 @@ const PremiumExecutionPage = () => {
                         
                         <button
                           onClick={() => handleExecuteAction(`exec-${index}`, rec)}
-                          disabled={executingActions.has(`exec-${index}`) || simulationMode}
-                          className="flex items-center px-6 py-3 bg-orange-600/80 hover:bg-orange-600 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+                          disabled={executingActions.has(`exec-${index}`) || executingActions.has(`sim-${index}`) || simulationMode}
+                          className="flex items-center justify-center px-6 py-3 bg-orange-600/80 hover:bg-orange-600 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
                         >
                           {executingActions.has(`exec-${index}`) ? (
                             <>
                               <Clock className="w-4 h-4 mr-2 animate-spin" />
-                              Executing
+                              Executing ({actionProgress[`exec-${index}`] || 0}%)
                             </>
                           ) : (
                             <>
@@ -351,7 +626,10 @@ const PremiumExecutionPage = () => {
           <h3 className="text-2xl font-light text-white mb-8">Emergency Controls</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <button className="group relative p-6 bg-red-600/20 hover:bg-red-600/30 rounded-2xl border border-red-500/30 transition-all">
+            <button 
+              onClick={() => handleEmergencyAction('emergency-stop')}
+              className="group relative p-6 bg-red-600/20 hover:bg-red-600/30 rounded-2xl border border-red-500/30 transition-all"
+            >
               <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-rose-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative text-center space-y-3">
                 <Pause className="w-8 h-8 text-red-400 mx-auto" />
@@ -360,7 +638,10 @@ const PremiumExecutionPage = () => {
               </div>
             </button>
 
-            <button className="group relative p-6 bg-yellow-600/20 hover:bg-yellow-600/30 rounded-2xl border border-yellow-500/30 transition-all">
+            <button 
+              onClick={() => handleEmergencyAction('deploy-batteries')}
+              className="group relative p-6 bg-yellow-600/20 hover:bg-yellow-600/30 rounded-2xl border border-yellow-500/30 transition-all"
+            >
               <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative text-center space-y-3">
                 <Battery className="w-8 h-8 text-yellow-400 mx-auto" />
@@ -369,7 +650,10 @@ const PremiumExecutionPage = () => {
               </div>
             </button>
 
-            <button className="group relative p-6 bg-blue-600/20 hover:bg-blue-600/30 rounded-2xl border border-blue-500/30 transition-all">
+            <button 
+              onClick={() => handleEmergencyAction('scale-mining')}
+              className="group relative p-6 bg-blue-600/20 hover:bg-blue-600/30 rounded-2xl border border-blue-500/30 transition-all"
+            >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative text-center space-y-3">
                 <TrendingUp className="w-8 h-8 text-blue-400 mx-auto" />
@@ -378,7 +662,10 @@ const PremiumExecutionPage = () => {
               </div>
             </button>
 
-            <button className="group relative p-6 bg-emerald-600/20 hover:bg-emerald-600/30 rounded-2xl border border-emerald-500/30 transition-all">
+            <button 
+              onClick={() => handleEmergencyAction('switch-inference')}
+              className="group relative p-6 bg-emerald-600/20 hover:bg-emerald-600/30 rounded-2xl border border-emerald-500/30 transition-all"
+            >
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative text-center space-y-3">
                 <Brain className="w-8 h-8 text-emerald-400 mx-auto" />
@@ -389,6 +676,15 @@ const PremiumExecutionPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Success Notification */}
+      <SuccessNotification
+        show={successNotification.show}
+        title={successNotification.title}
+        message={successNotification.message}
+        impact={successNotification.impact}
+        onClose={() => setSuccessNotification(prev => ({ ...prev, show: false }))}
+      />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { fetchPrices, fetchInventory, calculateProfitability } from '../services/api';
 import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
 import { useLiquidGlass } from './SimpleLiquidGlass';
+import MarkdownRenderer from './MarkdownRenderer';
 import { Send, Mic, MicOff, Brain, User, Minimize2, Maximize2 } from 'lucide-react';
 
 const PremiumChatWidget = () => {
@@ -208,7 +209,10 @@ const PremiumChatWidget = () => {
                         <User className="w-4 h-4 mt-1 text-white flex-shrink-0" />
                       )}
                       <div className="flex-1">
-                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        <MarkdownRenderer 
+                          content={message.content} 
+                          className="text-sm leading-relaxed"
+                        />
                         <div className="flex items-center justify-between mt-2 text-xs opacity-70">
                           <span>{formatTime(message.timestamp)}</span>
                           {message.confidence && (
