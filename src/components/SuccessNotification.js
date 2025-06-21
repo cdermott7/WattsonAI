@@ -1,4 +1,4 @@
-import { Activity, CheckCircle, Clock, Cpu, TrendingUp, X, Zap } from 'lucide-react';
+import { Activity, CheckCircle, Clock, Cpu, Loader2, TrendingUp, X, Zap } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useState } from 'react';
 
@@ -202,14 +202,18 @@ const SuccessNotification = ({ show, onClose, title, message, impact, details })
                   >
                     Continue
                   </button>
-                  {details && (
-                    <button 
-                      onClick={() => setShowDetails(!showDetails)}
-                      className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-xl transition-all font-medium"
-                    >
-                      {showDetails ? 'Hide Details' : 'View Details'}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => details && setShowDetails(!showDetails)}
+                    disabled={!details}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-xl transition-all font-medium flex items-center justify-center disabled:from-gray-500 disabled:to-gray-600 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {!details ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <span>Executing...</span>
+                      </>
+                    ) : showDetails ? 'Hide Details' : 'View Details'}
+                  </button>
                 </div>
               </motion.div>
             </div>
