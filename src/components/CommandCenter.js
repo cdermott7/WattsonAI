@@ -211,6 +211,30 @@ const CommandCenter = () => {
       setProfitReportData(reportData);
       setShowProfitReport(true);
       
+      // Send email notification for profit report
+      try {
+        await emailService.sendProfitReport({
+          dateRange: 'Last 24 Hours',
+          totalRevenue: reportData.periods['24h'].total,
+          profitMargin: reportData.metrics.grossMargin,
+          growthRate: reportData.trends.profitGrowth,
+          miningRevenue: reportData.periods['24h'].mining,
+          miningPercentage: ((reportData.periods['24h'].mining / reportData.periods['24h'].total) * 100).toFixed(1),
+          inferenceRevenue: reportData.periods['24h'].inference,
+          inferencePercentage: ((reportData.periods['24h'].inference / reportData.periods['24h'].total) * 100).toFixed(1),
+          arbitrageRevenue: reportData.periods['24h'].arbitrage,
+          arbitragePercentage: ((reportData.periods['24h'].arbitrage / reportData.periods['24h'].total) * 100).toFixed(1),
+          ebitda: reportData.metrics.ebitda,
+          ebitdaMargin: reportData.metrics.grossMargin,
+          roi: reportData.metrics.roi,
+          pue: reportData.metrics.pue,
+          fleetEfficiency: reportData.metrics.efficiency.overall,
+          facilities: reportData.breakdown.facilities
+        });
+      } catch (error) {
+        console.error('Failed to send profit report email:', error);
+      }
+      
       // Show browser notification for profit milestone
       try {
         await browserNotificationService.showProfitMilestone({

@@ -294,54 +294,65 @@ const PremiumDashboard = () => {
                     <stop offset="50%" stopColor={metricColors.primary} stopOpacity={0.1}/>
                     <stop offset="95%" stopColor={metricColors.primary} stopOpacity={0}/>
                   </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
                     <feMerge> 
                       <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                  <filter id="line-glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2" result="lineBlur"/>
+                    <feMerge>
+                      <feMergeNode in="lineBlur"/>
                       <feMergeNode in="SourceGraphic"/>
                     </feMerge>
                   </filter>
                 </defs>
                 <XAxis 
                   dataKey="time" 
-                  stroke="rgba(255, 255, 255, 0.4)" 
-                  fontSize={11}
+                  stroke="rgba(255, 255, 255, 0.3)" 
+                  fontSize={10}
                   fontWeight={300}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: 'rgba(255, 255, 255, 0.6)' }}
-                  tickMargin={10}
+                  tick={{ fill: 'rgba(255, 255, 255, 0.5)', fontSize: 10 }}
+                  tickMargin={15}
+                  interval="preserveStartEnd"
                 />
                 <YAxis 
-                  stroke="rgba(255, 255, 255, 0.4)" 
-                  fontSize={11}
+                  stroke="rgba(255, 255, 255, 0.3)" 
+                  fontSize={10}
                   fontWeight={300}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: 'rgba(255, 255, 255, 0.6)' }}
-                  tickMargin={10}
+                  tick={{ fill: 'rgba(255, 255, 255, 0.5)', fontSize: 10 }}
+                  tickMargin={15}
+                  width={60}
                   tickFormatter={(value) => {
-                    if (value < 1) return `$${value.toFixed(4)}`;
-                    if (value < 100) return `$${value.toFixed(2)}`;
+                    if (value < 1) return `$${value.toFixed(3)}`;
+                    if (value < 100) return `$${value.toFixed(1)}`;
                     return `$${Math.round(value)}`;
                   }}
-                  domain={['dataMin - 0.1', 'dataMax + 0.1']}
+                  domain={['dataMin * 0.95', 'dataMax * 1.05']}
                 />
                 <Area
                   type="monotone"
                   dataKey={selectedMetric}
                   stroke={metricColors.primary}
-                  strokeWidth={2}
+                  strokeWidth={3}
                   fill={`url(#gradient-${selectedMetric})`}
                   dot={false}
                   activeDot={{ 
-                    r: 6, 
+                    r: 8, 
                     stroke: metricColors.primary, 
-                    strokeWidth: 3,
-                    fill: 'rgba(0, 0, 0, 0.8)',
-                    filter: 'url(#glow)'
+                    strokeWidth: 4,
+                    fill: 'rgba(0, 0, 0, 0.9)',
+                    filter: 'url(#glow)',
+                    style: { dropShadow: `0 0 10px ${metricColors.primary}` }
                   }}
                   connectNulls={true}
+                  animationDuration={800}
                 />
               </AreaChart>
             </ResponsiveContainer>

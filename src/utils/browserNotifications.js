@@ -60,8 +60,7 @@ export class BrowserNotificationService {
         type = 'info',
         duration = 8000,
         requireInteraction = false,
-        actions = [],
-        data = {},
+          data = {},
         onClick = null,
         onClose = null
       } = options;
@@ -82,14 +81,8 @@ export class BrowserNotificationService {
         }
       };
 
-      // Add actions if supported
-      if (actions.length > 0 && 'serviceWorker' in navigator) {
-        notificationOptions.actions = actions.map(action => ({
-          action: action.id,
-          title: action.title,
-          icon: action.icon || this.icons.info
-        }));
-      }
+      // Skip actions for regular notifications - only supported in service worker notifications
+      // We'll handle action buttons in the UI instead
 
       // Create the notification
       const notification = new Notification(title, notificationOptions);
@@ -140,10 +133,6 @@ export class BrowserNotificationService {
       type: 'critical',
       requireInteraction: true,
       duration: 0, // Never auto-close
-      actions: [
-        { id: 'view', title: 'View Dashboard' },
-        { id: 'dismiss', title: 'Dismiss' }
-      ],
       data: { alertData },
       onClick: () => {
         // Focus window and navigate to appropriate section
@@ -160,10 +149,6 @@ export class BrowserNotificationService {
       message: `${optimizationData.title} - Revenue Impact: ${optimizationData.revenueImpact}`,
       type: 'success',
       duration: 6000,
-      actions: [
-        { id: 'view', title: 'View Results' },
-        { id: 'dismiss', title: 'OK' }
-      ],
       data: { optimizationData },
       onClick: () => {
         window.focus();
@@ -178,10 +163,6 @@ export class BrowserNotificationService {
       message: `${milestoneData.description} - Total: $${milestoneData.amount.toLocaleString()}`,
       type: 'success',
       duration: 8000,
-      actions: [
-        { id: 'report', title: 'View Report' },
-        { id: 'share', title: 'Share' }
-      ],
       data: { milestoneData },
       onClick: () => {
         window.focus();
@@ -197,11 +178,6 @@ export class BrowserNotificationService {
       type: 'warning',
       duration: 10000,
       requireInteraction: true,
-      actions: [
-        { id: 'execute', title: 'Execute' },
-        { id: 'analyze', title: 'Analyze' },
-        { id: 'dismiss', title: 'Dismiss' }
-      ],
       data: { opportunityData },
       onClick: () => {
         window.focus();
@@ -232,10 +208,6 @@ export class BrowserNotificationService {
       message: `${marketData.description} - Impact: ${marketData.impact}`,
       type: marketData.severity || 'info',
       duration: 8000,
-      actions: [
-        { id: 'analyze', title: 'Analyze' },
-        { id: 'execute', title: 'Execute Strategy' }
-      ],
       data: { marketData },
       onClick: () => {
         window.focus();
@@ -254,10 +226,6 @@ export class BrowserNotificationService {
       message: `${events.length} system events require attention. Click to review.`,
       type: 'info',
       duration: 10000,
-      actions: [
-        { id: 'review', title: 'Review All' },
-        { id: 'dismiss', title: 'Dismiss' }
-      ],
       data: { events },
       onClick: () => {
         window.focus();
