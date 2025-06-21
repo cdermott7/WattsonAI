@@ -38,6 +38,34 @@ app.get('/api/prices', async (req, res) => {
   }
 });
 
+// API endpoint to fetch inventory from Mara Hackathon API
+app.get('/api/inventory', async (req, res) => {
+  try {
+    console.log('Fetching inventory from Mara Hackathon API...');
+    
+    const response = await axios.get('https://mara-hackathon-api.onrender.com/inventory');
+    
+    console.log('Inventory API Response received:');
+    console.log('Status:', response.status);
+    console.log('Inventory data:');
+    console.log(JSON.stringify(response.data, null, 2));
+    
+    res.json({
+      success: true,
+      data: response.data,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error fetching inventory:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Simple test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is running!' });
@@ -48,4 +76,5 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Test endpoint: http://localhost:${PORT}/api/test`);
   console.log(`Prices endpoint: http://localhost:${PORT}/api/prices`);
+  console.log(`Inventory endpoint: http://localhost:${PORT}/api/inventory`);
 }); 
