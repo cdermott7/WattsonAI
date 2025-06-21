@@ -33,7 +33,8 @@ const PremiumExecutionPage = () => {
     analysisError, 
     performAnalysis,
     updateMachinesData,
-    apiKey
+    apiKey,
+    machines
   } = useData();
   
   const [data, setData] = useState({ prices: [], inventory: null, profitability: null });
@@ -371,6 +372,7 @@ const PremiumExecutionPage = () => {
           globalContext: {
             prices: data.prices,
             inventory: data.inventory,
+            machines: machines,
           },
           apiKey: apiKey
         });
@@ -614,7 +616,7 @@ const PremiumExecutionPage = () => {
             className={`mb-12 p-8 rounded-3xl border bg-gradient-to-r ${getStatusColor(analysis.status)}`}
           >
             <div className="flex items-center space-x-3 mb-6">
-              <TrendingUpIcon className="w-6 h-6 text-blue-400" />
+              <TrendingUp className="w-6 h-6 text-blue-400" />
               <h3 className="text-2xl font-light text-white">Market Analysis Summary</h3>
             </div>
             <p className="text-white/80 leading-relaxed text-lg">
@@ -766,16 +768,32 @@ const PremiumExecutionPage = () => {
                         </div>
                         
                         {/* Allocation Changes */}
-                        {action.body && (
+                        {action.body && machines && (
                           <div className="bg-black/20 rounded-xl p-4 border border-white/10">
                             <h6 className="text-white/80 text-sm font-medium mb-3">Allocation Changes:</h6>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                              {Object.entries(action.body).map(([key, value]) => (
-                                <div key={key} className="flex justify-between items-center p-2 bg-white/5 rounded-lg">
-                                  <span className="text-white/60 capitalize">{key.replace(/_/g, ' ')}:</span>
-                                  <span className="text-white font-medium">{value}</span>
-                                </div>
-                              ))}
+                              {Object.entries(action.body).map(([key, value]) => {
+                                if (machines.hasOwnProperty(key)) {
+                                  const currentValue = machines[key] ?? 0;
+                                  const newValue = parseInt(value, 10);
+                                  const diff = newValue - currentValue;
+
+                                  return (
+                                    <div key={key} className="flex justify-between items-center p-2 bg-white/5 rounded-lg">
+                                      <span className="text-white/60 capitalize">{key.replace(/_/g, ' ')}:</span>
+                                      <span className="text-white font-medium flex items-center">
+                                        {newValue}
+                                        {diff !== 0 && (
+                                          <span className={`ml-2 text-xs font-mono ${diff > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            ({diff > 0 ? `+${diff}` : diff})
+                                          </span>
+                                        )}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })}
                             </div>
                           </div>
                         )}
