@@ -19,7 +19,7 @@ const CommandCenter = () => {
     {
       id: 1,
       type: 'ai',
-      content: "Elementary, my dear colleague! Command Center operational. I'm monitoring 16,000 TH/s of mining capacity and 50,000 tokens/hour inference operations. What shall we optimize today?",
+      content: "Hello! I'm Wattson AI, your strategic operations assistant. How can I help you optimize your operations today?",
       timestamp: new Date(),
       confidence: 95
     }

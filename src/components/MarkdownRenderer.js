@@ -7,6 +7,14 @@ const MarkdownRenderer = ({ content, className = '' }) => {
     // Convert markdown-style formatting to JSX
     let formatted = text;
 
+    // Handle headings
+    formatted = formatted.replace(/^######\s+(.*)$/gm, '<h6 class="text-base font-semibold">$1</h6>');
+    formatted = formatted.replace(/^#####\s+(.*)$/gm, '<h5 class="text-lg font-semibold">$1</h5>');
+    formatted = formatted.replace(/^####\s+(.*)$/gm, '<h4 class="text-xl font-semibold">$1</h4>');
+    formatted = formatted.replace(/^###\s+(.*)$/gm, '<h3 class="text-2xl font-semibold">$1</h3>');
+    formatted = formatted.replace(/^##\s+(.*)$/gm, '<h2 class="text-3xl font-semibold">$1</h2>');
+    formatted = formatted.replace(/^#\s+(.*)$/gm, '<h1 class="text-4xl font-bold">$1</h1>');
+
     // Handle bold text (**text**)
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
     
