@@ -1,7 +1,23 @@
 {
-  "short_name": "Wattson",
-  "name": "Wattson - MARA Operations AI",
-  "icons": [],
+  "short_name": "Wattson AI",
+  "name": "Wattson AI Analytics",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#000000",

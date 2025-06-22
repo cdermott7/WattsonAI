@@ -185,9 +185,7 @@ const PremiumHomepage = () => {
         >
           <div className="text-center space-y-8">
             <div className="flex items-center justify-center space-x-4">
-              <div className="p-4 rounded-3xl bg-gradient-to-r from-orange-500 to-amber-500 shadow-2xl">
-                <Brain className="w-12 h-12 text-white" />
-              </div>
+              <img src="/logo.png" alt="Wattson AI Logo" className="w-24 h-24" />
               <div>
                 <h1 className="text-6xl font-extralight text-white tracking-tight">Wattson AI</h1>
                 <p className="text-2xl text-white/60 font-light">Your Strategic Operations Partner</p>

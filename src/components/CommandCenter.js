@@ -187,7 +187,7 @@ const CommandCenter = () => {
         // Show dynamic system status notification
         browserNotificationService.showSystemStatus({
           status: status,
-          message: `Wattson AI here, everything is running smoothly! Hashrate: ${newMetrics.totalHashrate.toFixed(0)} TH/s | Profit/Watt: $${newMetrics.profitPerWatt.toFixed(4)}`,
+          message: `Everything is running smoothly! Hashrate: ${newMetrics.totalHashrate.toFixed(0)} TH/s | Profit/Watt: $${newMetrics.profitPerWatt.toFixed(4)}`,
           efficiency: newMetrics.efficiency
         });
 
@@ -649,9 +649,7 @@ Order Status: **ACTIVE** | Monitoring: **CONTINUOUS**`,
           <div className="flex items-center justify-between">
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
-                <div className="p-4 rounded-3xl bg-gradient-to-r from-orange-500 to-amber-500 shadow-2xl">
-                  <Brain className="w-10 h-10 text-white" />
-                </div>
+                <img src="/logo.png" alt="Wattson AI Logo" className="w-16 h-16" />
                 <div>
                   <h1 className="text-5xl font-extralight text-white tracking-tight">Command Center</h1>
                   <p className="text-xl text-white/60 font-light">Autonomous Operations Control</p>
@@ -730,7 +728,7 @@ Order Status: **ACTIVE** | Monitoring: **CONTINUOUS**`,
               className="bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10 h-96"
             >
               <div className="flex items-center space-x-3 mb-6">
-                <Brain className="w-6 h-6 text-orange-400" />
+                <img src="/logo.png" alt="Wattson AI Logo" className="w-6 h-6" />
                 <h3 className="text-xl font-light text-white">Wattson Command Interface</h3>
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
               </div>
@@ -1195,7 +1193,7 @@ Order Status: **ACTIVE** | Monitoring: **CONTINUOUS**`,
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative bg-white/5 rounded-2xl p-6 border border-white/10">
                 <div className="flex items-center justify-between mb-4">
-                  <Brain className="w-8 h-8 text-emerald-400" />
+                  <img src="/logo.png" alt="Wattson AI Logo" className="w-8 h-8" />
                   <div className="text-xs text-white/60 font-mono">INFERENCE</div>
                 </div>
                 <div className="space-y-2">
@@ -1245,7 +1243,7 @@ Order Status: **ACTIVE** | Monitoring: **CONTINUOUS**`,
               <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative bg-white/5 rounded-2xl p-6 border border-white/10">
                 <div className="flex items-center justify-between mb-4">
-                  <Activity className="w-8 h-8 text-green-400" />
+                  <img src="/logo.png" alt="Wattson AI Logo" className="w-8 h-8" />
                   <div className="text-xs text-white/60 font-mono">CARBON</div>
                 </div>
                 <div className="space-y-2">
