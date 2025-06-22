@@ -22,7 +22,8 @@ WattsonAI is designed to streamline operations in a compute/data center environm
 ## Demo Video
 
 [![WattsonAI Demo Video](https://img.youtube.com/vi/XDzWh5-onb0/0.jpg)](https://www.youtube.com/watch?v=XDzWh5-onb0&feature=youtu.be)
-*Click the thumbnail above to watch the full demo of WattsonAI in action.*
+
+*Click the thumbnail above to watch our comprehensive demo showcasing WattsonAI's intelligent mining operations optimization, real-time analytics, and AI-powered decision making capabilities.*
 
 ## Key Features
 
@@ -83,6 +84,7 @@ WattsonAI combines several technologies to create a seamless, user-friendly expe
 
 ## Repository Structure
 
+```
 WattsonAI/
 ├── README.md                # Project overview and setup instructions
 ├── INTEGRATION.md           # API integration guide
@@ -107,6 +109,7 @@ WattsonAI/
     ├── package-lock.json    # Backend lockfile
     ├── server.js            # Express app entrypoint
     └── test.js              # Basic backend tests
+```
 
 ## Getting Started
 
