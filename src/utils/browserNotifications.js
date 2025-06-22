@@ -188,9 +188,23 @@ export class BrowserNotificationService {
   // Show system status notification
   async showSystemStatus(statusData) {
     const isHealthy = statusData.status === 'healthy';
+    
+    const metrics = [];
+    if (statusData.hashrate !== undefined) {
+      metrics.push(`Hashrate: ${statusData.hashrate.toFixed(0)} TH/s`);
+    }
+    if (statusData.profitPerWatt !== undefined) {
+      metrics.push(`Profit/Watt: $${statusData.profitPerWatt.toFixed(4)}`);
+    }
+    if (statusData.hashPrice !== undefined) {
+      metrics.push(`Hash Price: $${statusData.hashPrice.toFixed(2)}/TH`);
+    }
+    
+    const metricsText = metrics.join(' | ');
+
     return await this.showNotification({
       title: `🖥️ System Status: ${statusData.status.toUpperCase()}`,
-      message: `${statusData.message} - Hash Price: $${statusData.hashPrice.toFixed(2)}/TH`,
+      message: `${statusData.message}${metricsText ? ` - ${metricsText}` : ''}`,
       type: isHealthy ? 'success' : 'warning',
       duration: isHealthy ? 5000 : 12000,
       requireInteraction: !isHealthy,

@@ -165,7 +165,9 @@ const CommandCenter = () => {
           setTimeout(() => {
             browserNotificationService.showSystemStatus({
               status: 'healthy',
-              message: 'Wattson AI Command Center is online and monitoring operations',
+              message: 'Wattson AI is online!',
+              hashrate: liveMetrics.totalHashrate,
+              profitPerWatt: liveMetrics.profitPerWatt,
               hashPrice: liveMetrics.hashPrice
             });
           }, 2000);
@@ -203,7 +205,9 @@ const CommandCenter = () => {
         // Show dynamic system status notification
         browserNotificationService.showSystemStatus({
           status: status,
-          message: `Everything is running smoothly! Hashrate: ${newMetrics.totalHashrate.toFixed(0)} TH/s | Profit/Watt: $${newMetrics.profitPerWatt.toFixed(4)}`,
+          message: 'System status update',
+          hashrate: newMetrics.totalHashrate,
+          profitPerWatt: newMetrics.profitPerWatt,
           hashPrice: newMetrics.hashPrice
         });
 
