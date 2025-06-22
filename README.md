@@ -1,5 +1,7 @@
 # WattsonAI - MARA Operations AI
 
+Check out live website here!: https://wattson-ai.vercel.app/
+
 **Professional Black-themed enterprise AI agent for optimizing mining operations**
 
 WattsonAI is an intelligent AI assistant that helps MARA optimize their mining operations by extracting insights from energy prices and hash prices, providing real-time analysis and automated recommendations.
