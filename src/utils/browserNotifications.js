@@ -190,7 +190,7 @@ export class BrowserNotificationService {
     const isHealthy = statusData.status === 'healthy';
     return await this.showNotification({
       title: `🖥️ System Status: ${statusData.status.toUpperCase()}`,
-      message: `${statusData.message} - Efficiency: ${statusData.efficiency.toFixed(2)}%`,
+      message: `${statusData.message} - Hash Price: $${statusData.hashPrice.toFixed(2)}/TH`,
       type: isHealthy ? 'success' : 'warning',
       duration: isHealthy ? 5000 : 12000,
       requireInteraction: !isHealthy,

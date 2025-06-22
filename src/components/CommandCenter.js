@@ -1,18 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useLiquidGlass } from './SimpleLiquidGlass';
-import { useData } from '../context/DataContext';
-import { liveEvents, fleetData, marketData, performanceMetrics } from '../services/enhancedMockData';
-import AnimatedNumber from './AnimatedNumber';
-import SuccessNotification from './SuccessNotification';
-import MarkdownRenderer from './MarkdownRenderer';
-import { emailService } from '../utils/emailNotifications';
-import { browserNotificationService } from '../utils/browserNotifications';
-import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
 import {
-  Brain, Activity, Zap, Cpu, Battery, TrendingUp, TrendingDown, AlertTriangle,
-  BarChart3, Gauge, CheckCircle, Settings, Send, Mic, MicOff, Bell, Target
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Battery,
+  Bell,
+  Brain,
+  CheckCircle,
+  Cpu,
+  Gauge,
+  Mic,
+  MicOff,
+  Send,
+  Settings,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Zap
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { fleetData, liveEvents, marketData, performanceMetrics } from '../services/enhancedMockData';
+
+import AnimatedNumber from './AnimatedNumber';
+import { EnhancedWattsonAI } from '../utils/enhancedWattsonAI';
+import MarkdownRenderer from './MarkdownRenderer';
+import SuccessNotification from './SuccessNotification';
+import { browserNotificationService } from '../utils/browserNotifications';
+import { emailService } from '../utils/emailNotifications';
+import { useData } from '../context/DataContext';
+import { useLiquidGlass } from './SimpleLiquidGlass';
 
 const CommandCenter = () => {
   const [messages, setMessages] = useState([
@@ -150,7 +166,7 @@ const CommandCenter = () => {
             browserNotificationService.showSystemStatus({
               status: 'healthy',
               message: 'Wattson AI Command Center is online and monitoring operations',
-              efficiency: liveMetrics.efficiency
+              hashPrice: liveMetrics.hashPrice
             });
           }, 2000);
         }
@@ -188,7 +204,7 @@ const CommandCenter = () => {
         browserNotificationService.showSystemStatus({
           status: status,
           message: `Everything is running smoothly! Hashrate: ${newMetrics.totalHashrate.toFixed(0)} TH/s | Profit/Watt: $${newMetrics.profitPerWatt.toFixed(4)}`,
-          efficiency: newMetrics.efficiency
+          hashPrice: newMetrics.hashPrice
         });
 
         return newMetrics;
